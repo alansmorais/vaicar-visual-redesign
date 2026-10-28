@@ -43,7 +43,7 @@ export async function callDriverAppsScript(
     response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, sharedSecret, ...payload }),
+      body: JSON.stringify({ ...payload, action, sharedSecret }),
       redirect: 'follow',
       signal: AbortSignal.timeout(10000),
     });
