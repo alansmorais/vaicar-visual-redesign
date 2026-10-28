@@ -359,35 +359,23 @@ export const HomePage: React.FC = () => {
                     className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#087F8C] hover:bg-[#066A73] text-white font-extrabold text-base shadow-lg shadow-[#087F8C]/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2.5"
                   >
                     <Car className="w-5 h-5" />
-                    Pedir Corrida
+                    Corridas
                   </Link>
+                  <a
+                    href="#entregas"
+                    className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white/95 hover:bg-white text-slate-800 border border-white/70 font-bold text-sm transition-all hover:scale-[1.01] flex items-center justify-center gap-2 shadow-sm"
+                    aria-label="Conhecer o serviço de entregas, em breve"
+                  >
+                    <Package className="w-4 h-4 text-amber-600" />
+                    Entregas <span className="text-xs font-medium text-slate-500">(em breve)</span>
+                  </a>
                   <Link
                     to="/driver/register"
                     className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 font-bold text-sm transition-all hover:scale-[1.01] flex items-center justify-center gap-2 shadow-sm"
                   >
                     <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    Quero Dirigir
+                    Quero dirigir
                   </Link>
-                </div>
-
-                {/* Secondary accessible options (Empresas & Entregas) without competing with primary CTA */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-medium text-slate-400 dark:text-slate-500">Outros serviços:</span>
-                  <Link
-                    to="/parcerias"
-                    className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 hover:text-[#087F8C] dark:hover:text-emerald-400 transition-colors"
-                  >
-                    <Store className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    Para Empresas
-                  </Link>
-                  <span className="text-slate-300 dark:text-slate-700">•</span>
-                  <a
-                    href="#entregas"
-                    className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 hover:text-[#087F8C] dark:hover:text-emerald-400 transition-colors"
-                  >
-                    <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    Entregas locais (Em breve)
-                  </a>
                 </div>
               </div>
 
