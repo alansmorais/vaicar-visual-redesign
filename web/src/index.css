@@ -305,18 +305,18 @@ html:not(.dark) .leaflet-control-zoom a:hover {
   .text-blue-300, .text-blue-400, .text-blue-500, .text-blue-600, .text-blue-700 {
     color: #087F8C !important;
   }
-  .dark .dark\\:text-emerald-300,
-  .dark .dark\\:text-emerald-400,
-  .dark .dark\\:text-emerald-500 {
+  .dark .dark\:text-emerald-300,
+  .dark .dark\:text-emerald-400,
+  .dark .dark\:text-emerald-500 {
     color: #42BFA5 !important;
   }
-  .bg-blue-600, .bg-blue-700, .hover\\:bg-blue-700:hover {
+  .bg-blue-600, .bg-blue-700, .hover\:bg-blue-700:hover {
     background-color: #087F8C !important;
   }
-  .border-blue-200, .border-blue-500, .border-blue-500\\/30 {
+  .border-blue-200, .border-blue-500, .border-blue-500\/30 {
     border-color: rgba(8, 127, 140, 0.3) !important;
   }
-  .focus\\:ring-blue-500:focus {
+  .focus\:ring-blue-500:focus {
     --tw-ring-color: #087F8C !important;
   }
 }
