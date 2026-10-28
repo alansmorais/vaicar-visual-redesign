@@ -295,12 +295,12 @@ export const HomePage: React.FC = () => {
       <section className="relative overflow-hidden pt-8 pb-16 lg:py-20 border-b border-slate-200 dark:border-slate-900 bg-slate-950">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/sao-sebastiao/hero-rio-santos.jpg"
-            alt="Trecho costeiro da Rodovia Rio-Santos entre a Mata Atlântica e o mar de São Sebastião"
-            className="w-full h-full object-cover object-center opacity-60 sm:opacity-65 lg:opacity-70 dark:opacity-60 pointer-events-none"
+            src="/images/sao-sebastiao/praia-maresias.jpg"
+            alt="Vista ampla da Praia de Maresias em São Sebastião, com mar azul, areia e Mata Atlântica"
+            className="w-full h-full object-cover object-center opacity-75 sm:opacity-80 lg:opacity-85 dark:opacity-75 pointer-events-none"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#102A36]/85 via-[#102A36]/55 to-[#102A36]/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#102A36]/85 via-[#102A36]/10 to-[#102A36]/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#102A36]/75 via-[#102A36]/35 to-[#102A36]/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#102A36]/75 via-[#102A36]/5 to-[#102A36]/10" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(8,127,140,0.18),transparent)] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(66,191,165,0.22),transparent)] pointer-events-none" />
         </div>
 
