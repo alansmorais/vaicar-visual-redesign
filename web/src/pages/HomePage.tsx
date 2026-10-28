@@ -325,14 +325,14 @@ export const HomePage: React.FC = () => {
               <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400">R$ 100 ou 10%</span>
             </Link>
 
-            <Link
-              to="/parcerias"
+            <a
+              href="#entregas"
               className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center justify-center space-y-1 shadow-sm active:scale-95 transition-all"
             >
-              <Store className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <span className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Empresas</span>
-              <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 uppercase">Parcerias</span>
-            </Link>
+              <Package className="w-5 h-5 text-[#087F8C] dark:text-[#42BFA5]" />
+              <span className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Entregas</span>
+              <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 uppercase">Locais</span>
+            </a>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
