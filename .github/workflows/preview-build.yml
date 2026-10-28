@@ -14,6 +14,8 @@ permissions:
 
 jobs:
   build-web:
+    # The repository starts with design documentation only; wait until the real app source is imported.
+    if: ${{ hashFiles('package.json') != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
