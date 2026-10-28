@@ -11,6 +11,8 @@ The user reports that the spreadsheet tabs were created and the private driver d
 
 ## Latest isolated code changes
 - Added a Passengers sheet schema alongside Drivers, Config, and AuditLog.
+- Updated the architecture README to explicitly include passenger and driver registration/profile records, while excluding rides and dispatch.
+- Hardened the server-side request body so caller payload cannot override the selected action or shared secret.
 - Added an authenticated Apps Script diagnostic endpoint that accepts only `driver.health`.
 - All registration and profile actions remain disabled. No ride/delivery/GPS/online/payment actions are implemented here.
 - Added `driver.health` to the server-side client action type. The client remains unused by routes and disabled by default.
