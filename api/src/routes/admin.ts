@@ -1,0 +1,738 @@
+import { Router, Request, Response, NextFunction } from 'express';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { AppError } from '../middleware/errorHandler.js';
+import { ErrorCode } from '../../../shared/src/errors.js';
+import {
+  getAdminMetrics,
+  listAllDrivers,
+  getDriverProfile,
+  resolveDriverProfile,
+  saveDriverProfile,
+  deleteDriverProfile,
+  listAllPassengers,
+  getPassengerProfile,
+  savePassengerProfile,
+  deletePassengerProfile,
+  getUserProfile,
+  saveUserProfile,
+  findUserByEmail,
+  listAllRides,
+  getRide,
+  saveRide,
+  getRideOffer,
+  saveRideOffer,
+  listAllReports,
+  getReport,
+  saveReport,
+  getPlatformPricing,
+  updatePlatformPricing,
+  listPlatformSubsidies,
+  updatePlatformSubsidyStatus,
+} from '../services/firestore.js';
+import { sendDriverStatusEmail, sendDocumentsRequestedEmail, emailLogs, sendTransactionalEmail } from '../services/email.js';
+import { broadcastLiveEvent } from '../services/liveStream.js';
+import { formatRidePayload } from './rides.js';
+import { Ride, RideStatus } from '../../../shared/src/types.js';
+import { getApkDownloadAnalytics } from '../services/apkAnalytics.js';
+import { listDeliveryWaitlist } from '../services/deliveryWaitlist.js';
+
+export const adminRouter = Router();
+
+// Enforce admin authentication
+adminRouter.use(authenticate, requireAdmin);
+
+adminRouter.get('/analytics/downloads', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const analytics = await getApkDownloadAnalytics();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: analytics,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/deliveries/waitlist', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const waitlist = await listDeliveryWaitlist();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: waitlist,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/metrics', async (req: Request, res: Response, next: NextFunction) => {
+
+  try {
+    const metrics = await getAdminMetrics();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: metrics,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/drivers', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.query;
+    let drivers = await listAllDrivers();
+    if (status && typeof status === 'string') {
+      drivers = drivers.filter(d => d.status === status);
+    }
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: drivers,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/drivers/:id/approve', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    let driver = await getDriverProfile(id);
+    if (!driver) {
+      driver = await resolveDriverProfile(id);
+    }
+    if (!driver) throw new AppError(ErrorCode.NOT_FOUND, 'Motorista não encontrado.', 404);
+
+    const now = new Date().toISOString();
+    const updated = {
+      ...driver,
+      status: 'APPROVED' as const,
+      updatedAt: now,
+    };
+    delete (updated as any).rejectionReason;
+
+    await saveDriverProfile(updated);
+
+    // Sync all matching driver documents across all UIDs with same email or CPF
+    if (driver.email || driver.cpf) {
+      const allDrivers = await listAllDrivers();
+      for (const d of allDrivers) {
+        const matchesEmail = driver.email && d.email?.toLowerCase() === driver.email.toLowerCase();
+        const matchesCpf = driver.cpf && d.cpf === driver.cpf;
+        if ((matchesEmail || matchesCpf) && d.uid !== driver.uid) {
+          const syncCopy = { ...d, status: 'APPROVED' as const, updatedAt: now };
+          delete (syncCopy as any).rejectionReason;
+          await saveDriverProfile(syncCopy);
+        }
+      }
+    }
+
+    // Also sync user profile in users collection so user document has isDriver = true
+    let user = await getUserProfile(driver.uid);
+    if (!user && driver.email) {
+      user = await findUserByEmail(driver.email);
+    }
+    if (user) {
+      await saveUserProfile({
+        ...user,
+        isDriver: true,
+        role: 'driver',
+        isCourier: Boolean(user.isCourier || driver.isCourier),
+        updatedAt: now,
+      });
+    }
+
+    // Send email notification asynchronously
+    sendDriverStatusEmail(driver.email, driver.name, 'APPROVED').catch(console.error);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/drivers/:id/reject', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    let driver = await getDriverProfile(id);
+    if (!driver) {
+      driver = await resolveDriverProfile(id);
+    }
+    if (!driver) throw new AppError(ErrorCode.NOT_FOUND, 'Motorista não encontrado.', 404);
+
+    const { reason } = req.body;
+    const now = new Date().toISOString();
+    const updated = {
+      ...driver,
+      status: 'REJECTED' as const,
+      isOnline: false,
+      rejectionReason: reason || 'Documentação não atendeu aos critérios da plataforma.',
+      updatedAt: now,
+    };
+
+    await saveDriverProfile(updated);
+
+    // Sync all matching driver documents across all UIDs with same email or CPF
+    if (driver.email || driver.cpf) {
+      const allDrivers = await listAllDrivers();
+      for (const d of allDrivers) {
+        const matchesEmail = driver.email && d.email?.toLowerCase() === driver.email.toLowerCase();
+        const matchesCpf = driver.cpf && d.cpf === driver.cpf;
+        if ((matchesEmail || matchesCpf) && d.uid !== driver.uid) {
+          await saveDriverProfile({
+            ...d,
+            status: 'REJECTED' as const,
+            isOnline: false,
+            rejectionReason: updated.rejectionReason,
+            updatedAt: now,
+          });
+        }
+      }
+    }
+
+    sendDriverStatusEmail(driver.email, driver.name, 'REJECTED', updated.rejectionReason).catch(console.error);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/drivers/:id/suspend', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    let driver = await getDriverProfile(id);
+    if (!driver) {
+      driver = await resolveDriverProfile(id);
+    }
+    if (!driver) throw new AppError(ErrorCode.NOT_FOUND, 'Motorista não encontrado.', 404);
+
+    const { reason } = req.body;
+    const now = new Date().toISOString();
+    const updated = {
+      ...driver,
+      status: 'SUSPENDED' as const,
+      isOnline: false,
+      rejectionReason: reason || 'Conta temporariamente suspensa por infração aos termos.',
+      updatedAt: now,
+    };
+
+    await saveDriverProfile(updated);
+
+    // Sync all matching driver documents across all UIDs with same email or CPF
+    if (driver.email || driver.cpf) {
+      const allDrivers = await listAllDrivers();
+      for (const d of allDrivers) {
+        const matchesEmail = driver.email && d.email?.toLowerCase() === driver.email.toLowerCase();
+        const matchesCpf = driver.cpf && d.cpf === driver.cpf;
+        if ((matchesEmail || matchesCpf) && d.uid !== driver.uid) {
+          await saveDriverProfile({
+            ...d,
+            status: 'SUSPENDED' as const,
+            isOnline: false,
+            rejectionReason: updated.rejectionReason,
+            updatedAt: now,
+          });
+        }
+      }
+    }
+
+    sendDriverStatusEmail(driver.email, driver.name, 'SUSPENDED', updated.rejectionReason).catch(console.error);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/drivers/:id/request-docs', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const driverId = String(req.params.id);
+    const driver = await getDriverProfile(driverId);
+    if (!driver) throw new AppError(ErrorCode.NOT_FOUND, 'Motorista não encontrado.', 404);
+
+    const { requestedDocs, reason } = req.body;
+    if (!requestedDocs) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'Especifique os documentos solicitados.', 400);
+    }
+
+    const updated = {
+      ...driver,
+      status: 'PENDING_APPROVAL' as const,
+      isOnline: false,
+      documentsRequested: requestedDocs,
+      rejectionReason: `Documentação pendente: ${requestedDocs}`,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveDriverProfile(updated);
+
+    sendDocumentsRequestedEmail(driver.email, driver.name, requestedDocs, reason).catch(console.error);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: 'Solicitação de documentos enviada por e-mail com sucesso.',
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.delete('/drivers/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const driverId = String(req.params.id);
+    const driver = await getDriverProfile(driverId);
+    if (!driver) throw new AppError(ErrorCode.NOT_FOUND, 'Motorista não encontrado.', 404);
+
+    await deleteDriverProfile(driverId);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: `Motorista/Entregador "${driver.name}" excluído com sucesso.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/drivers/:id/delete', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const driverId = String(req.params.id);
+    const driver = await getDriverProfile(driverId);
+    if (!driver) throw new AppError(ErrorCode.NOT_FOUND, 'Motorista não encontrado.', 404);
+
+    await deleteDriverProfile(driverId);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: `Motorista/Entregador "${driver.name}" excluído com sucesso.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/passengers', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passengers = await listAllPassengers();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: passengers,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/passengers/:id/block', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passenger = await getPassengerProfile(String(req.params.id));
+    if (!passenger) throw new AppError(ErrorCode.NOT_FOUND, 'Passageiro não encontrado.', 404);
+
+    const { reason, unpaidAmount } = req.body;
+    const updated = {
+      ...passenger,
+      isBlocked: true,
+      blockedReason: reason || 'Bloqueado administrativamente por falta de pagamento ou conduta inadequada.',
+      hasUnpaidDebt: unpaidAmount ? true : passenger.hasUnpaidDebt,
+      unpaidAmount: unpaidAmount !== undefined ? Number(unpaidAmount) : passenger.unpaidAmount,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await savePassengerProfile(updated);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/passengers/:id/unblock', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passenger = await getPassengerProfile(String(req.params.id));
+    if (!passenger) throw new AppError(ErrorCode.NOT_FOUND, 'Passageiro não encontrado.', 404);
+
+    const updated = {
+      ...passenger,
+      isBlocked: false,
+      hasUnpaidDebt: false,
+      unpaidAmount: 0,
+      updatedAt: new Date().toISOString(),
+    };
+    delete (updated as any).blockedReason;
+
+    await savePassengerProfile(updated);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.delete('/passengers/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passengerId = String(req.params.id);
+    const passenger = await getPassengerProfile(passengerId);
+    if (!passenger) throw new AppError(ErrorCode.NOT_FOUND, 'Passageiro não encontrado.', 404);
+
+    await deletePassengerProfile(passengerId);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: `Passageiro ${passenger.name} excluído com sucesso.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/passengers/:id/delete', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passengerId = String(req.params.id);
+    const passenger = await getPassengerProfile(passengerId);
+    if (!passenger) throw new AppError(ErrorCode.NOT_FOUND, 'Passageiro não encontrado.', 404);
+
+    await deletePassengerProfile(passengerId);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: `Passageiro ${passenger.name} excluído com sucesso.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/passengers/:id/request-docs', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passengerId = String(req.params.id);
+    const passenger = await getPassengerProfile(passengerId);
+    if (!passenger) throw new AppError(ErrorCode.NOT_FOUND, 'Passageiro não encontrado.', 404);
+
+    const { requestedDocs, reason } = req.body;
+    if (!requestedDocs) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'Especifique os documentos solicitados.', 400);
+    }
+
+    const updated = {
+      ...passenger,
+      documentsRequested: requestedDocs,
+      criminalRecordStatus: 'PENDING' as const,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await savePassengerProfile(updated);
+
+    sendDocumentsRequestedEmail(passenger.email, passenger.name, requestedDocs, reason).catch(console.error);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: 'Solicitação de documentos enviada por e-mail com sucesso.',
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/reports', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reports = await listAllReports();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/reports/:id/resolve', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const report = await getReport(String(req.params.id));
+    if (!report) throw new AppError(ErrorCode.NOT_FOUND, 'Relato não encontrado.', 404);
+
+    const { resolutionNote, status } = req.body;
+    const updated = {
+      ...report,
+      status: status === 'DISMISSED' ? ('DISMISSED' as const) : ('RESOLVED' as const),
+      resolutionNote: resolutionNote || 'Resolvido pela administração.',
+      resolvedAt: new Date().toISOString(),
+    };
+
+    await saveReport(updated);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/rides', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rides = await listAllRides();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: rides.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/rides/:id/cancel', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rideId = String(req.params.id);
+    const ride = await getRide(rideId);
+    if (!ride) throw new AppError(ErrorCode.NOT_FOUND, 'Corrida não encontrada.', 404);
+
+    if (ride.status === 'COMPLETED' || ride.status.startsWith('CANCELLED')) {
+      throw new AppError(
+        ErrorCode.INVALID_RIDE_STATE,
+        `Não é possível cancelar uma corrida com status: ${ride.status}.`,
+        400
+      );
+    }
+
+    const { reason } = req.body;
+    const cancelReason = reason && String(reason).trim()
+      ? `[ADMIN] ${String(reason).trim()}`
+      : '[ADMIN] Cancelado administrativamente pelo painel.';
+
+    const now = new Date().toISOString();
+    const updatedRide: Ride = {
+      ...ride,
+      status: 'CANCELLED_BY_ADMIN' as RideStatus,
+      cancelledAt: now,
+      cancelledBy: 'ADMIN',
+      cancelReason,
+      currentOfferId: undefined,
+    };
+
+    if (ride.currentOfferId) {
+      const offer = await getRideOffer(ride.currentOfferId);
+      if (offer && offer.status === 'PENDING') {
+        await saveRideOffer({
+          ...offer,
+          status: 'EXPIRED',
+          respondedAt: now,
+        });
+      }
+    }
+
+    await saveRide(updatedRide);
+
+    const payload = formatRidePayload(updatedRide);
+    broadcastLiveEvent('RIDE_UPDATED', payload);
+    broadcastLiveEvent('RIDE_CANCELLED', { rideId: updatedRide.id, reason: cancelReason, cancelledBy: 'ADMIN' });
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: `Corrida #${rideId.slice(-6)} cancelada com sucesso pelo administrador.`,
+      data: payload,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/rides/:id/approve-payment', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rideId = String(req.params.id);
+    const ride = await getRide(rideId);
+    if (!ride) throw new AppError(ErrorCode.NOT_FOUND, 'Corrida não encontrada.', 404);
+
+    const now = new Date().toISOString();
+    const updatedRide: Ride = {
+      ...ride,
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+      paymentApprovedByDriver: true,
+      paymentApprovedAt: now,
+    };
+
+    await saveRide(updatedRide);
+
+    const payload = formatRidePayload(updatedRide);
+    broadcastLiveEvent('RIDE_UPDATED', payload);
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      message: `Pagamento da corrida #${rideId.slice(-6)} aprovado administrativamente com sucesso.`,
+      data: payload,
+      ride: payload,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/pricing', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pricing = await getPlatformPricing();
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: pricing,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.patch('/pricing', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      baseFare,
+      perKmRate,
+      perMinuteRate,
+      minimumFare,
+      nightSurchargeMultiplier,
+      deliveryMinimumFee,
+      deliveryPerKmRate,
+      deliveryWaitingPerMinuteRate,
+    } = req.body;
+
+    if (deliveryMinimumFee !== undefined && (isNaN(Number(deliveryMinimumFee)) || Number(deliveryMinimumFee) < 0)) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'O valor mínimo da entrega na plataforma deve ser maior ou igual a zero.', 400);
+    }
+    if (deliveryPerKmRate !== undefined && (isNaN(Number(deliveryPerKmRate)) || Number(deliveryPerKmRate) < 0)) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'O valor por KM da entrega na plataforma deve ser maior ou igual a zero.', 400);
+    }
+    if (deliveryWaitingPerMinuteRate !== undefined && (isNaN(Number(deliveryWaitingPerMinuteRate)) || Number(deliveryWaitingPerMinuteRate) < 0)) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'A taxa de espera da entrega na plataforma deve ser maior ou igual a zero.', 400);
+    }
+
+    const updated = await updatePlatformPricing({
+      ...(baseFare !== undefined ? { baseFare: Number(baseFare) } : {}),
+      ...(perKmRate !== undefined ? { perKmRate: Number(perKmRate) } : {}),
+      ...(perMinuteRate !== undefined ? { perMinuteRate: Number(perMinuteRate) } : {}),
+      ...(minimumFare !== undefined ? { minimumFare: Number(minimumFare) } : {}),
+      ...(nightSurchargeMultiplier !== undefined ? { nightSurchargeMultiplier: Number(nightSurchargeMultiplier) } : {}),
+      ...(deliveryMinimumFee !== undefined ? { deliveryMinimumFee: Number(deliveryMinimumFee) } : {}),
+      ...(deliveryPerKmRate !== undefined ? { deliveryPerKmRate: Number(deliveryPerKmRate) } : {}),
+      ...(deliveryWaitingPerMinuteRate !== undefined ? { deliveryWaitingPerMinuteRate: Number(deliveryWaitingPerMinuteRate) } : {}),
+    });
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/email-diagnostics', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: emailLogs,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/email-diagnostics/resend', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { logId } = req.body;
+    const entry = emailLogs.find(l => l.id === logId);
+    if (!entry) throw new AppError(ErrorCode.NOT_FOUND, 'Log de e-mail não encontrado.', 404);
+
+    const result = await sendTransactionalEmail({
+      to: entry.to,
+      subject: `[Reenvio] ${entry.subject}`,
+      template: entry.template,
+      html: `<p>Reenvio de notificação VaiCar.</p>`,
+    });
+
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/subsidies', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const subsidies = await listPlatformSubsidies();
+    const formatted = subsidies.map(formatRidePayload);
+    const totalSubsidyLiabilityBRL = formatted
+      .filter((s) => s.platformSubsidyStatus === 'PENDING_SETTLEMENT')
+      .reduce((acc, s) => acc + (s.platformSubsidyAmount || 0), 0);
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: {
+        subsidies: formatted,
+        totalSubsidyLiabilityBRL: Math.round(totalSubsidyLiabilityBRL * 100) / 100,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/subsidies/:id/settle', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const updated = await updatePlatformSubsidyStatus(String(req.params.id), 'SETTLED');
+    if (!updated) {
+      throw new AppError(ErrorCode.NOT_FOUND, 'Corrida com subsídio não encontrada.', 404);
+    }
+    res.json({
+      success: true,
+      requestId: req.id,
+      data: formatRidePayload(updated),
+      message: 'Subsídio promocional marcado como liquidado com sucesso.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+

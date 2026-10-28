@@ -1,0 +1,16 @@
+.gcloudignore
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+node_modules
+dist
+dist-ssr
+tests/screenshots
+*.log
+.DS_Store
+Thumbs.db
+scratch/
+*.apk
+!public/downloads/*.apk
