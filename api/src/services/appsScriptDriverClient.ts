@@ -7,7 +7,7 @@
  */
 import { config } from '../config/index.js';
 
-type DriverAction = 'driver.register' | 'driver.get' | 'driver.adminList' | 'driver.adminSetStatus';
+type DriverAction = 'driver.health' | 'driver.register' | 'driver.get' | 'driver.adminList' | 'driver.adminSetStatus';
 
 export interface AppsScriptDriverResponse {
   success: boolean;
