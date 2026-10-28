@@ -1,19 +1,25 @@
-# VaiCar driver migration — current setup and next steps
+# VaiCar registration migration — current setup and next steps
 
-The user has manually run the Apps Script setup and reports:
-- The spreadsheet tabs were added successfully.
-- The private driver documents folder was created successfully.
+## Scope
+Google Apps Script + Google Sheets are for passenger and driver registration/profile records only. Private driver documents belong in Google Drive. They must not receive or process rides, deliveries, GPS tracking, online-state lifecycle, payments, pricing, or dispatch.
 
-Next manual verification:
-1. In the spreadsheet tab Config, confirm ENVIRONMENT=TEST.
-2. Confirm DRIVE_FOLDER_ID has a value.
-3. Confirm INTEGRATION_STATUS=NOT_CONNECTED.
-Do not share the folder publicly and do not paste document IDs or secrets into public chat or GitHub.
+## Current setup
+The user reports that the spreadsheet tabs were created and the private driver documents folder was created. The Config sheet should remain:
+- ENVIRONMENT = TEST
+- DRIVE_FOLDER_ID = populated
+- INTEGRATION_STATUS = NOT_CONNECTED
 
-Next engineering step (not yet activated):
-- Build a server-side Apps Script client in the existing API service.
-- Keep Apps Script URL and shared secret in server-side environment variables only, never VITE/frontend variables.
-- Keep passenger routes untouched.
-- Implement driver registration/profile bridge behind a feature flag and test using a separate test spreadsheet and synthetic records.
-- Complete authentication/session design and admin authorization before enabling writes or moving driver login.
-- No production deploy and no data migration until explicitly approved.
+## Latest isolated code changes
+- Added a Passengers sheet schema alongside Drivers, Config, and AuditLog.
+- Added an authenticated Apps Script diagnostic endpoint that accepts only `driver.health`.
+- All registration and profile actions remain disabled. No ride/delivery/GPS/online/payment actions are implemented here.
+- Added `driver.health` to the server-side client action type. The client remains unused by routes and disabled by default.
+
+## Next safe steps
+1. Review the Apps Script code in this branch.
+2. In Apps Script Project Settings, set a strong `VAICAR_SHARED_SECRET` as a Script Property. Do not put it in code, Sheets, frontend variables, or chat.
+3. Only after review, manually copy the updated Code.gs into the dedicated test Apps Script project, save, and deploy a test Web App. Do not change production.
+4. Configure the URL and matching secret only in a non-production server environment, then run a health-only test.
+5. After health is verified, design and implement passenger/driver registration actions with server-side identity verification, duplicate checks, private file upload, audit logging, and admin authorization. Never store passwords, session tokens, or public document links in Sheets.
+
+No live registrations are migrated or enabled. Do not deploy production or alter the Android APK/Kotlin/Gradle files.
