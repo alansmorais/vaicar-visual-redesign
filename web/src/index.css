@@ -30,8 +30,8 @@
   --slate-100: 17 24 39;    /* Main text #111827 */
   --slate-50: 15 23 42;     /* Darkest text #0F172A */
 
-  --color-primary-blue: #155DFC;
-  --color-hover-blue: #2563EB;
+  --color-primary-blue: #087F8C;
+  --color-hover-blue: #066A73;
   --color-success: #059669;
   --color-error: #DC2626;
 
@@ -41,18 +41,18 @@
 html.dark {
   /* ========================================================
      VAICAR DARK THEME PALETTE (Preserves original appearance)
-     Main Background:   #020617 (2 6 23)
-     Cards & Surfaces:  #0F172A (15 23 42)
-     Borders & Dividers:#1E293B (30 41 59)
+     Main Background:   #102A36 (16 42 54)
+     Cards & Surfaces:  #163541 (22 53 65)
+     Borders & Dividers:#294854 (41 72 84)
      Secondary Borders: #334155 (51 65 85)
      Main Text:         #F8FAFC / #F1F5F9
      Secondary Text:    #CBD5E1 (203 213 225)
      ======================================================== */
-  --slate-950: 2 6 23;      /* #020617 */
-  --slate-900: 15 23 42;    /* #0F172A */
-  --slate-800: 30 41 59;    /* #1E293B */
-  --slate-700: 51 65 85;    /* #334155 */
-  --slate-600: 71 85 105;   /* #475569 */
+  --slate-950: 16 42 54;     /* Coastal navy #102A36 */
+  --slate-900: 22 53 65;     /* Coastal surface #163541 */
+  --slate-800: 41 72 84;     /* Coastal border #294854 */
+  --slate-700: 54 91 101;    /* Muted coastal border */
+  --slate-600: 82 117 125;   /* Coastal muted */
   --slate-500: 100 116 139; /* #64748B */
   --slate-400: 148 163 184; /* #94A3B8 */
   --slate-300: 203 213 225; /* #CBD5E1 */
@@ -60,8 +60,8 @@ html.dark {
   --slate-100: 241 245 249; /* #F1F5F9 */
   --slate-50: 248 250 252;  /* #F8FAFC */
 
-  --color-primary-blue: #38BDF8;
-  --color-hover-blue: #0284C7;
+  --color-primary-blue: #42BFA5;
+  --color-hover-blue: #087F8C;
   --color-success: #10B981;
   --color-error: #EF4444;
 
@@ -259,8 +259,8 @@ html:not(.dark) .leaflet-control-zoom a:hover {
 }
 
 @keyframes pulseBorder {
-  0%, 100% { border-color: rgba(34, 197, 94, 0.4); }
-  50% { border-color: rgba(34, 197, 94, 0.9); }
+  0%, 100% { border-color: rgba(66, 191, 165, 0.4); }
+  50% { border-color: rgba(66, 191, 165, 0.9); }
 }
 
 .animate-pulse-border {
