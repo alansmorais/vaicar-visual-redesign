@@ -1,6 +1,6 @@
 # VaiCar Visual Design System
 
-Status: design specification only. This repository does not yet contain the application source, so these tokens are not wired into the live app.
+Status: visual redesign in the isolated `redesign/preview` branch. The production website remains unchanged. The preview build compiles the frontend; backend/API functionality is not hosted by the static preview.
 
 ## Goals
 
