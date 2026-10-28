@@ -171,6 +171,7 @@ const FAQ_ITEMS: FaqItem[] = [
 ];
 
 export const HomePage: React.FC = () => {
+  const [showDeliveryNotice, setShowDeliveryNotice] = useState(false);
   const [popularPlaces, setPopularPlaces] = useState<KnownLocation[]>([]);
   const [onlineDrivers, setOnlineDrivers] = useState<PublicDriverMarker[]>([]);
   const [originIndex, setOriginIndex] = useState<number>(0);
@@ -361,14 +362,15 @@ export const HomePage: React.FC = () => {
                     <Car className="w-5 h-5" />
                     Corridas
                   </Link>
-                  <a
-                    href="#entregas"
+                  <button
+                    type="button"
+                    onClick={() => setShowDeliveryNotice(true)}
                     className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white/95 hover:bg-white text-slate-800 border border-white/70 font-bold text-sm transition-all hover:scale-[1.01] flex items-center justify-center gap-2 shadow-sm"
-                    aria-label="Conhecer o serviço de entregas, em breve"
+                    aria-label="Informações sobre entregas, em breve"
                   >
                     <Package className="w-4 h-4 text-amber-600" />
                     Entregas <span className="text-xs font-medium text-slate-500">(em breve)</span>
-                  </a>
+                  </button>
                   <Link
                     to="/driver/register"
                     className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 font-bold text-sm transition-all hover:scale-[1.01] flex items-center justify-center gap-2 shadow-sm"
@@ -1403,6 +1405,37 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {showDeliveryNotice && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4"
+          role="presentation"
+          onClick={() => setShowDeliveryNotice(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delivery-notice-title"
+            className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 text-slate-900 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <Package className="h-6 w-6" />
+            </div>
+            <h2 id="delivery-notice-title" className="text-xl font-black">VaiCar Entregas</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Estamos preparando o serviço de entregas em São Sebastião. Os pedidos ainda não estão ativos; não é possível solicitar uma entrega por enquanto.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowDeliveryNotice(false)}
+              className="mt-5 w-full rounded-xl bg-[#087F8C] px-4 py-3 text-sm font-bold text-white hover:bg-[#066A73]"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
