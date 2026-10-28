@@ -297,10 +297,10 @@ export const HomePage: React.FC = () => {
           <img
             src="/images/sao-sebastiao/hero-rio-santos.jpg"
             alt="Trecho costeiro da Rodovia Rio-Santos entre a Mata Atlântica e o mar de São Sebastião"
-            className="w-full h-full object-cover object-center opacity-15 sm:opacity-20 lg:opacity-25 dark:opacity-20 pointer-events-none"
+            className="w-full h-full object-cover object-center opacity-60 sm:opacity-65 lg:opacity-70 dark:opacity-60 pointer-events-none"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#102A36]/95 via-[#102A36]/85 to-[#102A36]/75" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#102A36]/95 via-[#102A36]/10 to-[#102A36]/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#102A36]/85 via-[#102A36]/55 to-[#102A36]/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#102A36]/85 via-[#102A36]/10 to-[#102A36]/20" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(8,127,140,0.18),transparent)] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(66,191,165,0.22),transparent)] pointer-events-none" />
         </div>
 
@@ -343,11 +343,11 @@ export const HomePage: React.FC = () => {
                 Transporte 100% Local • São Sebastião - SP
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.15]">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15] drop-shadow-lg">
                 Mobilidade local, sem complicação. <span className="text-[#087F8C] dark:text-[#42BFA5]">Corridas e entregas.</span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto lg:mx-0 leading-relaxed drop-shadow">
                 Peça um carro ou encontre opções de entrega em São Sebastião. Simples, direto e com pagamento combinado com o parceiro.
               </p>
 
@@ -1217,7 +1217,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Operating Zones & Beaches Showcase with Real Photography */}
-      <section id="praias-cobertas" className="hidden py-20 bg-slate-950 border-b border-slate-800">
+      <section id="praias-cobertas" className="py-10 bg-[#102A36] border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
             <div>
@@ -1239,13 +1239,13 @@ export const HomePage: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
             {DESTINATION_CARDS.map((dest) => (
               <div
                 key={dest.name}
                 onClick={() => handleSelectDestination(dest.searchKey)}
                 className="group relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800/90 hover:border-blue-500/60 dark:hover:border-emerald-500/60 bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-end"
-                style={{ minHeight: '220px' }}
+                style={{ minHeight: '155px' }}
               >
                 {/* Authentic Location Photo */}
                 <img
@@ -1259,7 +1259,7 @@ export const HomePage: React.FC = () => {
                 <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-transparent transition-colors" />
 
                 {/* Content Overlay */}
-                <div className="relative z-10 p-4 space-y-1">
+                <div className="relative z-10 p-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 dark:text-emerald-400 bg-slate-950/85 px-2 py-0.5 rounded-md border border-blue-500/30 dark:border-emerald-500/30 backdrop-blur-sm flex items-center gap-1">
                       <MapPin className="w-2.5 h-2.5 text-blue-400 dark:text-emerald-400" /> {dest.zone}
