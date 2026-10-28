@@ -344,11 +344,11 @@ export const HomePage: React.FC = () => {
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15] drop-shadow-lg">
-                Mobilidade local, sem complicação. <span className="text-[#087F8C] dark:text-[#42BFA5]">Corridas e entregas.</span>
+                Como podemos ajudar?
               </h1>
 
               <p className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto lg:mx-0 leading-relaxed drop-shadow">
-                Peça um carro ou encontre opções de entrega em São Sebastião. Simples, direto e com pagamento combinado com o parceiro.
+                São Sebastião • Corridas e entregas locais.
               </p>
 
               {/* CTAs */}
@@ -391,8 +391,8 @@ export const HomePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Key Highlights */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200 dark:border-slate-800/80 max-w-lg mx-auto lg:mx-0 text-left">
+              {/* Key Highlights — hidden on the minimal homepage */}
+              <div className="hidden grid-cols-3 gap-4 pt-6 border-t border-slate-200 dark:border-slate-800/80 max-w-lg mx-auto lg:mx-0 text-left">
                 <div>
                   <span className="block text-2xl font-black text-[#087F8C] dark:text-[#42BFA5]">Sem Dinâmica</span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Tarifa justa em São Sebastião</span>
@@ -407,15 +407,15 @@ export const HomePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Location Badge */}
-              <div className="pt-2 flex items-center justify-center lg:justify-start gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              {/* Location Badge — concise location is already shown in the header */}
+              <div className="hidden pt-2 flex items-center justify-center lg:justify-start gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 <MapPin className="w-3.5 h-3.5 text-[#087F8C] dark:text-[#42BFA5] shrink-0" />
                 <span>Atendimento de Boracéia à Enseada • Conexão Costa Sul, Centro e Balsa</span>
               </div>
             </div>
 
-            {/* Right Simulator Card */}
-            <div className="lg:col-span-5" id="simulador">
+            {/* Fare simulator moved out of the first screen to keep the mobility actions clear */}
+            <div className="hidden lg:col-span-5" id="simulador">
               <div className="bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-md dark:shadow-2xl space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -618,7 +618,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* COMO FUNCIONA & DIFERENCIAIS DE CONFIANÇA */}
-      <section id="como-funciona" className="py-14 sm:py-18 bg-transparent border-b border-slate-200 dark:border-slate-900">
+      <section id="como-funciona" className="hidden py-14 sm:py-18 bg-transparent border-b border-slate-200 dark:border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -822,7 +822,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* THREE CORE SERVICE AREAS */}
-      <section id="servicos-apk" className="py-16 sm:py-20 bg-transparent border-b border-slate-200 dark:border-slate-900">
+      <section id="servicos-apk" className="hidden py-16 sm:py-20 bg-transparent border-b border-slate-200 dark:border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
           <div className="text-center max-w-3xl mx-auto">
             <span className="text-xs font-bold uppercase tracking-wider text-[#087F8C] dark:text-emerald-400 px-3 py-1 rounded-full bg-[#087F8C]/8 dark:bg-emerald-950/80 border border-[#087F8C]/25 dark:border-emerald-500/30">
@@ -1079,7 +1079,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* DELIVERY SERVICE WAITLIST / INTEREST REGISTRATION FORM */}
-      <section id="lista-espera" className="py-20 bg-slate-950/60 border-b border-slate-800">
+      <section id="lista-espera" className="hidden py-20 bg-slate-950/60 border-b border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-md dark:shadow-2xl relative overflow-hidden">
             <div className="text-center max-w-2xl mx-auto space-y-3 mb-8">
