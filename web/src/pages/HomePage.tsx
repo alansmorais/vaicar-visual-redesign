@@ -207,13 +207,22 @@ export const HomePage: React.FC = () => {
   };
 
   useEffect(() => {
+    // The isolated static preview does not host the VaiCar API. Treat non-array
+    // responses as unavailable rather than letting a text/HTML response crash
+    // the homepage. Real API arrays continue to render normally.
     mapsApi.getPopularPlaces().then((places) => {
-      setPopularPlaces(places);
-    }).catch(console.error);
+      setPopularPlaces(Array.isArray(places) ? places : []);
+    }).catch((error) => {
+      console.warn('[HomePage] Popular places unavailable in this environment:', error);
+      setPopularPlaces([]);
+    });
 
     driversApi.getOnlineDrivers().then((drivers) => {
-      setOnlineDrivers(drivers);
-    }).catch(console.error);
+      setOnlineDrivers(Array.isArray(drivers) ? drivers : []);
+    }).catch((error) => {
+      console.warn('[HomePage] Online drivers unavailable in this environment:', error);
+      setOnlineDrivers([]);
+    });
   }, []);
 
   useEffect(() => {
