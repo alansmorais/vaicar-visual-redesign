@@ -273,11 +273,11 @@ export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Centralized sub-header banner */}
-      <div className="bg-blue-50/70 dark:bg-slate-900/90 border-b border-blue-200/60 dark:border-slate-800/80 py-2.5 px-4 text-center">
+      <div className="bg-[#087F8C]/8/70 dark:bg-slate-900/90 border-b border-[#087F8C]/25/60 dark:border-slate-800/80 py-2.5 px-4 text-center">
         <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 max-w-4xl mx-auto flex items-center justify-center gap-2 flex-wrap">
           <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-emerald-500 inline-block animate-pulse shrink-0" />
           <span>
-            Mobilidade justa em São Sebastião: <strong className="text-blue-700 dark:text-emerald-400">Corridas ativas</strong> com pagamento direto • <span className="text-blue-700 dark:text-emerald-400 font-semibold">Sem tarifa dinâmica</span> • <span className="text-amber-700 dark:text-amber-400 font-semibold">Entregas em breve!</span>
+            Mobilidade justa em São Sebastião: <strong className="text-[#087F8C] dark:text-emerald-400">Corridas ativas</strong> com pagamento direto • <span className="text-[#087F8C] dark:text-emerald-400 font-semibold">Sem tarifa dinâmica</span> • <span className="text-amber-700 dark:text-amber-400 font-semibold">Entregas em breve!</span>
           </span>
         </p>
       </div>
@@ -288,11 +288,11 @@ export const HomePage: React.FC = () => {
           <img
             src="/images/sao-sebastiao/hero-rio-santos.jpg"
             alt="Trecho costeiro da Rodovia Rio-Santos entre a Mata Atlântica e o mar de São Sebastião"
-            className="w-full h-full object-cover object-center opacity-15 lg:opacity-25 dark:opacity-25 pointer-events-none"
+            className="w-full h-full object-cover object-center opacity-30 sm:opacity-35 lg:opacity-45 dark:opacity-40 pointer-events-none"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/90 to-white/70 dark:from-slate-950 dark:via-slate-950/95 dark:to-slate-950/75" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/60 dark:from-slate-950 dark:via-transparent dark:to-slate-950/80" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(21,93,252,0.08),transparent)] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.15),transparent)] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#F4F0E7]/95 via-[#102A36]/75 to-[#102A36]/55 dark:from-[#102A36]/95 dark:via-[#102A36]/80 dark:to-[#102A36]/55" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#102A36]/95 via-[#102A36]/10 to-[#102A36]/40" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(8,127,140,0.18),transparent)] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(66,191,165,0.22),transparent)] pointer-events-none" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -300,7 +300,7 @@ export const HomePage: React.FC = () => {
           <div className="grid grid-cols-3 gap-2.5 pb-6 lg:hidden">
             <Link
               to="/passenger"
-              className="p-3 rounded-2xl bg-blue-600 text-white text-center flex flex-col items-center justify-center space-y-1 shadow-md shadow-blue-500/25 active:scale-95 transition-all"
+              className="p-3 rounded-2xl bg-blue-600 text-white text-center flex flex-col items-center justify-center space-y-1 shadow-md shadow-[#087F8C]/25 active:scale-95 transition-all"
             >
               <Car className="w-5 h-5 text-white" />
               <span className="text-[11px] font-extrabold text-white leading-tight">Pedir Corrida</span>
@@ -329,13 +329,13 @@ export const HomePage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-slate-800 text-blue-700 dark:text-blue-400 text-xs font-semibold backdrop-blur-sm">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#087F8C]/8 dark:bg-slate-900 border border-[#087F8C]/25 dark:border-slate-800 text-[#087F8C] dark:text-[#42BFA5] text-xs font-semibold backdrop-blur-sm">
                 <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-emerald-500 animate-pulse" />
                 Transporte 100% Local • São Sebastião - SP
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.15]">
-                Sua corrida, do seu jeito, <span className="text-blue-600 dark:text-emerald-400">aqui em São Sebastião.</span>
+                Sua corrida, do seu jeito, <span className="text-[#087F8C] dark:text-[#42BFA5]">aqui em São Sebastião.</span>
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
@@ -347,7 +347,7 @@ export const HomePage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
                   <Link
                     to="/passenger"
-                    className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-base shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2.5"
+                    className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#087F8C] hover:bg-[#066A73] text-white font-extrabold text-base shadow-lg shadow-[#087F8C]/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2.5"
                   >
                     <Car className="w-5 h-5" />
                     Pedir Corrida
@@ -366,7 +366,7 @@ export const HomePage: React.FC = () => {
                   <span className="font-medium text-slate-400 dark:text-slate-500">Outros serviços:</span>
                   <Link
                     to="/parcerias"
-                    className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-emerald-400 transition-colors"
+                    className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 hover:text-[#087F8C] dark:hover:text-emerald-400 transition-colors"
                   >
                     <Store className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     Para Empresas
@@ -374,7 +374,7 @@ export const HomePage: React.FC = () => {
                   <span className="text-slate-300 dark:text-slate-700">•</span>
                   <a
                     href="#entregas"
-                    className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-emerald-400 transition-colors"
+                    className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300 hover:text-[#087F8C] dark:hover:text-emerald-400 transition-colors"
                   >
                     <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     Entregas locais (Em breve)
@@ -385,7 +385,7 @@ export const HomePage: React.FC = () => {
               {/* Key Highlights */}
               <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200 dark:border-slate-800/80 max-w-lg mx-auto lg:mx-0 text-left">
                 <div>
-                  <span className="block text-2xl font-black text-blue-600 dark:text-emerald-400">Sem Dinâmica</span>
+                  <span className="block text-2xl font-black text-[#087F8C] dark:text-[#42BFA5]">Sem Dinâmica</span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Tarifa justa em São Sebastião</span>
                 </div>
                 <div>
@@ -400,7 +400,7 @@ export const HomePage: React.FC = () => {
 
               {/* Location Badge */}
               <div className="pt-2 flex items-center justify-center lg:justify-start gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-emerald-400 shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-[#087F8C] dark:text-[#42BFA5] shrink-0" />
                 <span>Atendimento de Boracéia à Enseada • Conexão Costa Sul, Centro e Balsa</span>
               </div>
             </div>
@@ -410,9 +410,9 @@ export const HomePage: React.FC = () => {
               <div className="bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-md dark:shadow-2xl space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-blue-600 dark:text-emerald-400" /> Simulador de Tarifa Local
+                    <Zap className="w-5 h-5 text-[#087F8C] dark:text-[#42BFA5]" /> Simulador de Tarifa Local
                   </h3>
-                  <span className="text-[11px] font-semibold text-blue-700 dark:text-emerald-400 px-2 py-0.5 rounded bg-blue-50 dark:bg-emerald-950 border border-blue-200 dark:border-emerald-800">
+                  <span className="text-[11px] font-semibold text-[#087F8C] dark:text-emerald-400 px-2 py-0.5 rounded bg-[#087F8C]/8 dark:bg-emerald-950 border border-[#087F8C]/25 dark:border-emerald-800">
                     Tarifa Oficial 2026
                   </span>
                 </div>
@@ -420,12 +420,12 @@ export const HomePage: React.FC = () => {
                 {/* Origin selection */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-emerald-400" /> Ponto de Partida
+                    <MapPin className="w-3.5 h-3.5 text-[#087F8C] dark:text-[#42BFA5]" /> Ponto de Partida
                   </label>
                   <select
                     value={originIndex}
                     onChange={(e) => setOriginIndex(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#087F8C] font-medium"
                   >
                     {popularPlaces.map((p, idx) => (
                       <option key={p.name} value={idx}>
@@ -443,7 +443,7 @@ export const HomePage: React.FC = () => {
                   <select
                     value={destinationIndex}
                     onChange={(e) => setDestinationIndex(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#087F8C] font-medium"
                   >
                     {popularPlaces.map((p, idx) => (
                       <option key={p.name} value={idx}>
@@ -455,16 +455,16 @@ export const HomePage: React.FC = () => {
 
                 {/* Result box */}
                 {estimate && (
-                  <div className="bg-blue-50/60 dark:bg-slate-950 rounded-xl p-4 border border-blue-200 dark:border-emerald-500/30 flex items-center justify-between">
+                  <div className="bg-[#087F8C]/8/60 dark:bg-slate-950 rounded-xl p-4 border border-[#087F8C]/25 dark:border-emerald-500/30 flex items-center justify-between">
                     <div>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Estimativa Regulamentada:</span>
-                      <span className="text-3xl font-black text-blue-600 dark:text-emerald-400">
+                      <span className="text-3xl font-black text-[#087F8C] dark:text-[#42BFA5]">
                         {loadingEstimate ? 'Calculando...' : `R$ ${estimate.fareAmount.toFixed(2)}`}
                       </span>
                     </div>
                     <div className="text-right text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
                       <div className="flex items-center gap-1 justify-end text-slate-700 dark:text-slate-300 font-medium">
-                        <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-emerald-400" /> ~{estimate.durationMinutes} min
+                        <Clock className="w-3.5 h-3.5 text-[#087F8C] dark:text-[#42BFA5]" /> ~{estimate.durationMinutes} min
                       </div>
                       <div>{estimate.distanceKm.toFixed(1)} km aproximados</div>
                     </div>
@@ -554,7 +554,7 @@ export const HomePage: React.FC = () => {
                                 📍 {(estimate?.distanceKm ?? routeMetrics?.distanceKm)?.toFixed(1)} km
                               </span>
                               <span className="text-slate-300 dark:text-slate-700">•</span>
-                              <span className="text-[11px] font-bold text-blue-600 dark:text-emerald-400">
+                              <span className="text-[11px] font-bold text-[#087F8C] dark:text-[#42BFA5]">
                                 ⏱️ ~{estimate?.durationMinutes ?? routeMetrics?.durationMinutes} min
                               </span>
                             </div>
@@ -568,10 +568,10 @@ export const HomePage: React.FC = () => {
                           href={gmapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-slate-950 dark:hover:bg-slate-800 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                          className="px-3 py-2.5 rounded-xl bg-[#087F8C]/8 hover:bg-blue-100 dark:bg-slate-950 dark:hover:bg-slate-800 text-[#087F8C] dark:text-blue-300 border border-[#087F8C]/25 dark:border-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                           title="Abrir rota no Google Maps"
                         >
-                          <ExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                          <ExternalLink className="w-3.5 h-3.5 text-[#087F8C] dark:text-blue-400 shrink-0" />
                           <span>Google Maps</span>
                         </a>
                         <a
@@ -592,7 +592,7 @@ export const HomePage: React.FC = () => {
                 <div className="space-y-1.5 pt-1">
                   <Link
                     to="/passenger"
-                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 hover:shadow-lg active:scale-95 group"
+                    className="w-full py-3.5 px-4 rounded-xl bg-[#087F8C] hover:bg-[#066A73] text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-[#087F8C]/25 hover:shadow-lg active:scale-95 group"
                   >
                     <Car className="w-4 h-4 transition-transform group-hover:scale-110" />
                     <span>Pedir Corrida no Painel</span>
@@ -613,7 +613,7 @@ export const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-emerald-400 px-3.5 py-1 rounded-full bg-blue-50 dark:bg-emerald-950/80 border border-blue-200 dark:border-emerald-500/30 inline-flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#087F8C] dark:text-emerald-400 px-3.5 py-1 rounded-full bg-[#087F8C]/8 dark:bg-emerald-950/80 border border-[#087F8C]/25 dark:border-emerald-500/30 inline-flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5" /> Simples, Rápido e Local
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -630,10 +630,10 @@ export const HomePage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-sm">
+                  <div className="w-10 h-10 rounded-xl bg-[#087F8C]/8 dark:bg-slate-800 border border-[#087F8C]/25 dark:border-slate-700 flex items-center justify-center text-[#087F8C] dark:text-blue-400 font-black text-sm">
                     1
                   </div>
-                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50/80 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-800/60">
+                  <span className="text-[11px] font-bold text-[#087F8C] dark:text-blue-400 uppercase tracking-wider bg-[#087F8C]/8/80 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-[#087F8C]/25/60 dark:border-blue-800/60">
                     Simule & Peça
                   </span>
                 </div>
@@ -644,7 +644,7 @@ export const HomePage: React.FC = () => {
                   Pelo navegador ou aplicativo, selecione sua rota em São Sebastião e visualize a estimativa de tempo e tarifa regulamentada antes de confirmar.
                 </p>
               </div>
-              <div className="pt-2 text-xs font-semibold text-blue-600 dark:text-emerald-400 flex items-center gap-1">
+              <div className="pt-2 text-xs font-semibold text-[#087F8C] dark:text-[#42BFA5] flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Sem tarifa dinâmica surpresa</span>
               </div>
@@ -668,7 +668,7 @@ export const HomePage: React.FC = () => {
                   Um motorista parceiro local aceita sua corrida. Acompanhe a chegada em tempo real com identificação de veículo e condutor verificado.
                 </p>
               </div>
-              <div className="pt-2 text-xs font-semibold text-blue-600 dark:text-emerald-400 flex items-center gap-1">
+              <div className="pt-2 text-xs font-semibold text-[#087F8C] dark:text-[#42BFA5] flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Condutores com CNH e certidão de antecedentes</span>
               </div>
@@ -678,10 +678,10 @@ export const HomePage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 flex items-center justify-center text-blue-600 dark:text-emerald-400 font-black text-sm">
+                  <div className="w-10 h-10 rounded-xl bg-[#087F8C]/8 dark:bg-slate-800 border border-[#087F8C]/25 dark:border-slate-700 flex items-center justify-center text-[#087F8C] dark:text-[#42BFA5] font-black text-sm">
                     3
                   </div>
-                  <span className="text-[11px] font-bold text-blue-600 dark:text-emerald-400 uppercase tracking-wider bg-blue-50/80 dark:bg-slate-950/80 px-2 py-0.5 rounded border border-blue-200/60 dark:border-slate-800">
+                  <span className="text-[11px] font-bold text-[#087F8C] dark:text-[#42BFA5] uppercase tracking-wider bg-[#087F8C]/8/80 dark:bg-slate-950/80 px-2 py-0.5 rounded border border-[#087F8C]/25/60 dark:border-slate-800">
                     Acerto Direto
                   </span>
                 </div>
@@ -703,7 +703,7 @@ export const HomePage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#087F8C]/8 dark:bg-blue-950/60 border border-[#087F8C]/25 dark:border-blue-800 flex items-center justify-center text-[#087F8C] dark:text-blue-400 shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
@@ -727,7 +727,7 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-emerald-400 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#087F8C]/8 dark:bg-blue-950/60 border border-[#087F8C]/25 dark:border-blue-800 flex items-center justify-center text-[#087F8C] dark:text-[#42BFA5] shrink-0">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
@@ -758,17 +758,17 @@ export const HomePage: React.FC = () => {
       <section className="py-14 sm:py-18 bg-transparent border-b border-slate-200 dark:border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-emerald-500/40 rounded-3xl p-6 sm:p-10 shadow-md dark:shadow-2xl relative overflow-hidden backdrop-blur-sm">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-[#087F8C]/80/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-8 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-emerald-950 border border-blue-200 dark:border-emerald-500/40 text-blue-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#087F8C]/8 dark:bg-emerald-950 border border-[#087F8C]/25 dark:border-emerald-500/40 text-[#087F8C] dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
                   <Gift className="w-3.5 h-3.5" />
                   <span>Programa de Indicação VaiCar</span>
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                  Indique Amigos e Ganhe <span className="text-blue-600 dark:text-emerald-400">R$ 5,00 em Créditos</span>
+                  Indique Amigos e Ganhe <span className="text-[#087F8C] dark:text-[#42BFA5]">R$ 5,00 em Créditos</span>
                 </h2>
 
                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
@@ -777,15 +777,15 @@ export const HomePage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <span className="text-xs font-bold text-blue-600 dark:text-emerald-400 block">1. Compartilhe seu Código</span>
+                    <span className="text-xs font-bold text-[#087F8C] dark:text-[#42BFA5] block">1. Compartilhe seu Código</span>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">Disponível no seu painel de passageiro em 1 clique via WhatsApp.</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <span className="text-xs font-bold text-blue-600 dark:text-emerald-400 block">2. Amigo Ganha R$ 5</span>
+                    <span className="text-xs font-bold text-[#087F8C] dark:text-[#42BFA5] block">2. Amigo Ganha R$ 5</span>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">Desconto imediato na primeira viagem realizada em São Sebastião.</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <span className="text-xs font-bold text-blue-600 dark:text-emerald-400 block">3. Você Recebe R$ 5</span>
+                    <span className="text-xs font-bold text-[#087F8C] dark:text-[#42BFA5] block">3. Você Recebe R$ 5</span>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">Crédito automático para abater nas suas próximas viagens.</p>
                   </div>
                 </div>
@@ -794,7 +794,7 @@ export const HomePage: React.FC = () => {
               <div className="lg:col-span-4 flex flex-col gap-3 text-center sm:text-left">
                 <Link
                   to="/passenger"
-                  className="px-6 py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all text-center active:scale-95"
+                  className="px-6 py-4 rounded-xl bg-[#087F8C] hover:bg-[#066A73] text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all text-center active:scale-95"
                 >
                   <Gift className="w-4 h-4" />
                   <span>Pegar meu Código de Indicação</span>
@@ -816,7 +816,7 @@ export const HomePage: React.FC = () => {
       <section id="servicos-apk" className="py-16 sm:py-20 bg-transparent border-b border-slate-200 dark:border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
           <div className="text-center max-w-3xl mx-auto">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-emerald-400 px-3 py-1 rounded-full bg-blue-50 dark:bg-emerald-950/80 border border-blue-200 dark:border-emerald-500/30">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#087F8C] dark:text-emerald-400 px-3 py-1 rounded-full bg-[#087F8C]/8 dark:bg-emerald-950/80 border border-[#087F8C]/25 dark:border-emerald-500/30">
               Ecossistema VaiCar em São Sebastião
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight mt-3">
@@ -829,8 +829,8 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* AREA 1: PASSENGERS */}
-            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-3xl p-7 flex flex-col justify-between hover:border-blue-500/50 dark:hover:border-emerald-500/50 transition-all shadow-md dark:shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-3xl p-7 flex flex-col justify-between hover:border-[#087F8C]/50 dark:hover:border-emerald-500/50 transition-all shadow-md dark:shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#087F8C]/80/10 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
               
               {/* Photo Header */}
               <div className="relative h-36 -mx-7 -mt-7 mb-6 overflow-hidden rounded-t-3xl">
@@ -861,15 +861,15 @@ export const HomePage: React.FC = () => {
 
                 <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#087F8C] dark:text-[#42BFA5] shrink-0 mt-0.5" />
                     <span><strong>Bônus de Indicação:</strong> R$ 5,00 de desconto na primeira corrida para novos passageiros convidados por amigos cadastrados.</span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#087F8C] dark:text-[#42BFA5] shrink-0 mt-0.5" />
                     <span><strong>Pagamento 100% Direto ao Condutor:</strong> O passageiro paga diretamente ao motorista via Pix ou dinheiro. A VaiCar não retém o valor das corridas.</span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#087F8C] dark:text-[#42BFA5] shrink-0 mt-0.5" />
                     <span><strong>Preço Justo e Regulamentado:</strong> Base de R$ 10,00, R$ 1,00/km e R$ 0,25/minuto com tolerância de espera de 4 min.</span>
                   </div>
                 </div>
@@ -879,13 +879,13 @@ export const HomePage: React.FC = () => {
                 <a
                   href="/downloads/vaicar-passenger.apk"
                   download="vaicar-passenger.apk"
-                  className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#087F8C] hover:bg-[#066A73] text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   <Download className="w-4 h-4 text-white stroke-[2.5]" />
                   Baixar APK Passageiro (16.8 MB)
                 </a>
                 <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 dark:text-slate-400">
-                  <Link to="/como-funciona/passageiro" className="hover:text-blue-600 dark:hover:text-emerald-400 underline">
+                  <Link to="/como-funciona/passageiro" className="hover:text-[#087F8C] dark:hover:text-emerald-400 underline">
                     Como Funciona a Plataforma →
                   </Link>
                   <Link to="/passenger" className="hover:text-slate-900 dark:hover:text-white underline">
@@ -954,7 +954,7 @@ export const HomePage: React.FC = () => {
                   Baixar APK Motorista (18.2 MB)
                 </a>
                 <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 dark:text-slate-400">
-                  <Link to="/como-funciona/motorista" className="hover:text-blue-600 dark:hover:text-emerald-400 underline">
+                  <Link to="/como-funciona/motorista" className="hover:text-[#087F8C] dark:hover:text-emerald-400 underline">
                     Requisitos & Planos Detalhados →
                   </Link>
                   <Link to="/driver/register" className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">
@@ -1212,7 +1212,7 @@ export const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-emerald-400 px-3 py-1 rounded-full bg-blue-50 dark:bg-emerald-950/80 border border-blue-200 dark:border-emerald-500/30">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#087F8C] dark:text-[#42BFA5] px-3 py-1 rounded-full bg-[#087F8C]/8 dark:bg-emerald-950/80 border border-[#087F8C]/25 dark:border-emerald-500/30">
                 Cobertura Geográfica Real • São Sebastião
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-2.5">
@@ -1224,7 +1224,7 @@ export const HomePage: React.FC = () => {
             </div>
             <Link
               to="/passenger"
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white dark:bg-slate-900 dark:hover:bg-slate-800 dark:border dark:border-slate-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 shadow-sm"
+              className="px-5 py-2.5 rounded-xl bg-[#087F8C] hover:bg-[#066A73] text-white dark:bg-slate-900 dark:hover:bg-slate-800 dark:border dark:border-slate-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 shadow-sm"
             >
               Pedir Corrida pelo Mapa <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -1272,7 +1272,7 @@ export const HomePage: React.FC = () => {
 
           <div className="mt-6 flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-800 gap-2">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-emerald-400" /> Mais de 30 praias e bairros atendidos com raio de busca de até 15 km
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#087F8C] dark:text-[#42BFA5]" /> Mais de 30 praias e bairros atendidos com raio de busca de até 15 km
             </span>
             <span className="text-[11px] text-slate-400 dark:text-slate-500">
               Dica: Clique em qualquer praia para selecionar como destino no simulador
@@ -1285,7 +1285,7 @@ export const HomePage: React.FC = () => {
       <section id="faq" className="py-20 bg-slate-950/60 border-b border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-emerald-400 px-3 py-1 rounded-full bg-blue-50 dark:bg-emerald-950 border border-blue-200 dark:border-emerald-500/30 inline-flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#087F8C] dark:text-[#42BFA5] px-3 py-1 rounded-full bg-[#087F8C]/8 dark:bg-emerald-950 border border-[#087F8C]/25 dark:border-emerald-500/30 inline-flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5" /> Dúvidas Frequentes
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
@@ -1304,7 +1304,7 @@ export const HomePage: React.FC = () => {
                   key={item.question}
                   className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                     isOpen
-                      ? 'bg-slate-900 border-blue-500/50 dark:border-emerald-500/50 shadow-md'
+                      ? 'bg-slate-900 border-[#087F8C]/50 dark:border-emerald-500/50 shadow-md'
                       : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
                   }`}
                 >
@@ -1315,7 +1315,7 @@ export const HomePage: React.FC = () => {
                     className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none"
                   >
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-emerald-400">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#087F8C] dark:text-[#42BFA5]">
                         {item.category}
                       </span>
                       <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
@@ -1347,7 +1347,7 @@ export const HomePage: React.FC = () => {
               href="https://chat.whatsapp.com/IkPEGc6SjNE8f1NIOHUCV3"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-emerald-400 hover:text-blue-700 dark:hover:text-emerald-300 hover:underline"
+              className="inline-flex items-center gap-2 text-xs font-bold text-[#087F8C] dark:text-[#42BFA5] hover:text-[#087F8C] dark:hover:text-emerald-300 hover:underline"
             >
               <MessageCircle className="w-4 h-4" />
               <span>Entrar no Grupo Oficial de Suporte ↗</span>
@@ -1365,13 +1365,13 @@ export const HomePage: React.FC = () => {
             loading="lazy"
             className="w-full h-full object-cover opacity-15 pointer-events-none"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/10 via-slate-950/95 to-slate-950 dark:from-emerald-950/80 dark:via-slate-950/95 dark:to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#102A36]/30 via-slate-950/95 to-slate-950 dark:from-emerald-950/80 dark:via-slate-950/95 dark:to-slate-950" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="bg-slate-900/90 border border-slate-800 dark:border-emerald-500/30 rounded-3xl p-8 sm:p-12 flex flex-col lg:flex-row items-center justify-between gap-8 shadow-md dark:shadow-2xl relative overflow-hidden backdrop-blur-sm">
             <div className="space-y-4 max-w-2xl text-center lg:text-left">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-emerald-950 dark:border-emerald-500/40 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#087F8C]/8 text-[#087F8C] border border-[#087F8C]/25 dark:bg-emerald-950 dark:border-emerald-500/40 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
                 Comunidade Oficial VaiCar
               </span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1381,9 +1381,9 @@ export const HomePage: React.FC = () => {
                 Entre no nosso grupo oficial no WhatsApp para suporte rápido, avisos sobre filas da balsa para Ilhabela, condições da rodovia Rio-Santos (SP-055) e contato direto com a equipe.
               </p>
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-emerald-400" /> Suporte ágil</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-emerald-400" /> Atualizações locais</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-emerald-400" /> Motoristas e passageiros</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#087F8C] dark:text-[#42BFA5]" /> Suporte ágil</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#087F8C] dark:text-[#42BFA5]" /> Atualizações locais</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#087F8C] dark:text-[#42BFA5]" /> Motoristas e passageiros</span>
               </div>
             </div>
 
