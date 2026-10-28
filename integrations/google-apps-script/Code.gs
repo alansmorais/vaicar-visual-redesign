@@ -7,6 +7,11 @@
  */
 
 const VAICAR_SCHEMA = {
+  Passengers: [
+    'uid', 'name', 'email', 'whatsapp', 'photoFileId', 'hasCriminalRecordCheck',
+    'criminalRecordFileId', 'idDocumentFileId', 'termsAccepted', 'referralCode',
+    'referredByCode', 'createdAt', 'updatedAt'
+  ],
   Drivers: [
     'uid', 'name', 'email', 'whatsapp', 'cpf', 'birthDate', 'photoFileId',
     'professionalCategory', 'cnhNumber', 'cnhFileId', 'crlvFileId',
@@ -112,6 +117,48 @@ function checkVaiCarSetup() {
     ? 'Faltam estas abas: ' + missing.join(', ') + '. Execute "Preparar abas".'
     : 'As abas existem. Integração do site: ainda não conectada. Use somente dados de teste.';
   SpreadsheetApp.getUi().alert('VaiCar — Verificação', message, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+/**
+ * Authenticated server-to-server diagnostic endpoint.
+ * Only driver.health is accepted at this stage. No registration, profile writes,
+ * passenger actions, rides, deliveries, GPS, or online-state actions are handled.
+ * Configure VAICAR_SHARED_SECRET in Apps Script Project Settings > Script properties.
+ */
+function doPost(e) {
+  try {
+    const raw = e && e.postData && e.postData.contents;
+    if (!raw || raw.length > 20000) return jsonResponse_({ success: false, error: 'Invalid request.' });
+    const request = JSON.parse(raw);
+    const expected = PropertiesService.getScriptProperties().getProperty('VAICAR_SHARED_SECRET');
+    if (!expected || !request || !constantTimeEquals_(String(request.sharedSecret || ''), expected)) {
+      return jsonResponse_({ success: false, error: 'Unauthorized.' });
+    }
+
+    if (request.action === 'driver.health') {
+      return jsonResponse_({ success: true, service: 'vaicar-registration-adapter', status: 'ready' });
+    }
+
+    return jsonResponse_({ success: false, error: 'Action not enabled.' });
+  } catch (err) {
+    return jsonResponse_({ success: false, error: 'Invalid request.' });
+  }
+}
+
+function jsonResponse_(value) {
+  return ContentService
+    .createTextOutput(JSON.stringify(value))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function constantTimeEquals_(a, b) {
+  const left = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, a, Utilities.Charset.UTF_8);
+  const right = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, b, Utilities.Charset.UTF_8);
+  let diff = left.length ^ right.length;
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    diff |= (left[i] || 0) ^ (right[i] || 0);
+  }
+  return diff === 0;
 }
 
 function findConfigRow_(sheet, key) {
