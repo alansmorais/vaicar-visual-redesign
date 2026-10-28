@@ -77,6 +77,12 @@ export const PassengerRegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    if (window.location.hostname.endsWith('.pages.dev')) {
+      setError('Esta é uma prévia visual do VaiCar. Para proteger seus dados, o envio real do cadastro está desativado nesta versão.');
+      return;
+    }
+
+
     // Validation matching backend strict rules
     if (!name.trim() || name.trim().length < 2) {
       setError('Informe seu nome completo.');
