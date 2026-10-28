@@ -235,6 +235,12 @@ export const DriverRegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    if (window.location.hostname.endsWith('.pages.dev')) {
+      setError('Esta é uma prévia visual do VaiCar. Para proteger seus dados, o envio real do cadastro está desativado nesta versão.');
+      return;
+    }
+
+
     // Validation
     if (!name.trim() || name.trim().length < 3) {
       setError('Informe seu nome completo.');
