@@ -23,10 +23,8 @@ jobs:
           unzip -q /tmp/vaicar-source.zip -d /tmp/vaicar-source
           SOURCE_DIR="$(find /tmp/vaicar-source -mindepth 1 -maxdepth 1 -type d | head -n 1)"
           test -n "$SOURCE_DIR"
-          # Import the complete source while preserving this repository's own documentation.
+          # Preserve the redesign repository documentation and workflow files.
           rsync -a --exclude='README.md' "$SOURCE_DIR/" ./
-          # Never import Git metadata or overwrite preview workflow files.
-          rm -rf .git
       - name: Commit imported source to preview branch
         run: |
           set -euo pipefail
