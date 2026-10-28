@@ -1,0 +1,35 @@
+name: VaiCar referral tests
+
+on:
+  push:
+    branches: [redesign/preview]
+    paths:
+      - "tests/referral.test.ts"
+      - "api/src/services/firestore.ts"
+      - "api/src/routes/passengers.ts"
+      - "shared/src/types.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/referral-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  referral-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: redesign/preview
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run referral system tests
+        run: npm test -- tests/referral.test.ts
