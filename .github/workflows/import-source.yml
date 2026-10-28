@@ -1,0 +1,38 @@
+name: Import VaiCar source into preview branch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: redesign/preview
+          fetch-depth: 0
+      - name: Download original public source
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://api.github.com/repos/alansmorais/-vaicar-app/zipball/main" -o /tmp/vaicar-source.zip
+          mkdir -p /tmp/vaicar-source
+          unzip -q /tmp/vaicar-source.zip -d /tmp/vaicar-source
+          SOURCE_DIR="$(find /tmp/vaicar-source -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          test -n "$SOURCE_DIR"
+          rsync -a --exclude='README.md' "$SOURCE_DIR/" ./
+      - name: Commit imported source to preview branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to import."
+            exit 0
+          fi
+          git commit -m "Import VaiCar source for isolated visual redesign"
+          git push origin HEAD:redesign/preview
