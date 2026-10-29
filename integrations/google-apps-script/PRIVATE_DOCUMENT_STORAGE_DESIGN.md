@@ -17,7 +17,7 @@ The future API must accept only an explicit enum, not a caller-supplied Drive fo
 - `passenger_identity_document`
 - `passenger_criminal_record` (only where legally required and explicitly consented)
 
-The business/legal need for each document type must be confirmed before enabling it. Public profile photos are not part of this private-document endpoint.
+The business/legal need for each document type must be confirmed before enabling it. Public profile photos are not part of this private-document endpoint. The current API registration endpoints now reject non-empty legacy sensitive-document URL fields until this private flow is implemented, so callers must not send public Drive/storage URLs as a workaround.
 
 ## Required API boundary
 
