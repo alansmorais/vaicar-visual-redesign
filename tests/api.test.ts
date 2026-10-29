@@ -97,6 +97,27 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('rejects malformed base64 instead of silently decoding ignored characters', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'verified-upload-owner', fileData: 'data:image/png;base64,AAAA!!!' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('base64');
+    });
+
+    it('rejects a declared image MIME type that differs from the file signature', async () => {
+      // A valid 1x1 PNG signature/payload declared as JPEG must not be accepted.
+      const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/FZsAAAAASUVORK5CYII=';
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'verified-upload-owner', fileData: `data:image/jpeg;base64,${pngBase64}` });
+
+      expect(res.status).toBe(400);
+    });
   });
 
   describe('Passenger Registration Validation', () => {
