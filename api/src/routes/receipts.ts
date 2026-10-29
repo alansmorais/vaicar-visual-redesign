@@ -44,8 +44,7 @@ receiptsRouter.get('/:id', async (req: Request, res: Response, next: NextFunctio
 
 receiptsRouter.get('/:id/html', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const receipt = await getReceipt(String(req.params.id));
-    if (!receipt) throw new AppError(ErrorCode.NOT_FOUND, 'Recibo não encontrado.', 404);
+    const receipt = await getAuthorizedReceipt(String(req.params.id), req.user!.uid, Boolean(req.user!.isAdmin || req.user!.role === 'admin'));
 
     const html = `
       <!DOCTYPE html>
