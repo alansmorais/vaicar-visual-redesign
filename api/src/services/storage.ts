@@ -75,68 +75,26 @@ export async function storeImage(
   mimeType: string
 ): Promise<StorageUploadResult> {
   const normalizedPath = storagePath.replace(/\\/g, '/').replace(/^\/+/, '');
-  const dataBase64 = buffer.toString('base64');
-
-  // 1. Keep in memory store for instant access
-  memoryFiles.set(normalizedPath, { dataBase64, mimeType });
-
-  // 2. Persist in Firestore `stored_files` collection for reliable multi-instance persistence
-  const db = getFirebaseAdminFirestore();
-  if (db) {
-    try {
-      const docId = normalizedPath.replace(/[^a-zA-Z0-9_-]/g, '_');
-      await db.collection('stored_files').doc(docId).set({
-        storagePath: normalizedPath,
-        mimeType,
-        sizeBytes: buffer.length,
-        dataBase64,
-        createdAt: new Date().toISOString(),
-      }, { merge: true });
-    } catch (err) {
-      console.warn('[Storage] Firestore persistent save note:', err);
-    }
+  if (!/^(users|passengers|drivers)\/[A-Za-z0-9_-]+\/profile\.(jpg|png|webp)$/.test(normalizedPath)) {
+    throw new Error('Invalid public profile image storage path.');
+  }
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+    throw new Error('Only supported profile image MIME types may use public profile storage.');
+  }
+  const checked = validateImageBuffer(buffer);
+  if (!checked.valid || checked.mimeType !== mimeType) {
+    throw new Error('Profile image bytes do not match the validated MIME type.');
   }
 
-  // 3. Local filesystem write
+  // Public storage is intentionally limited to non-sensitive profile images.
+  // Sensitive documents must use a separate private storage implementation.
   const localDir = path.resolve(process.cwd(), 'public', 'uploads', path.dirname(normalizedPath));
-  if (!fs.existsSync(localDir)) {
-    fs.mkdirSync(localDir, { recursive: true });
-  }
+  fs.mkdirSync(localDir, { recursive: true });
   const filePath = path.resolve(process.cwd(), 'public', 'uploads', normalizedPath);
   fs.writeFileSync(filePath, buffer);
 
-  // 4. Try remote Firebase/GCS bucket if configured
-  const adminStorage = getFirebaseAdminStorage();
-  if (adminStorage) {
-    try {
-      const bucket = adminStorage.bucket();
-      const file = bucket.file(normalizedPath);
-      await file.save(buffer, {
-        metadata: {
-          contentType: mimeType,
-          cacheControl: 'public, max-age=31536000',
-        },
-      });
-
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '03-01-2035',
-      });
-
-      return {
-        url,
-        storagePath: normalizedPath,
-        sizeBytes: buffer.length,
-        mimeType,
-      };
-    } catch {
-      // Remote bucket signedUrl or permission fallback - localUrl is reliable
-    }
-  }
-
-  const localUrl = `/uploads/${normalizedPath}`;
   return {
-    url: localUrl,
+    url: `/uploads/${normalizedPath}`,
     storagePath: normalizedPath,
     sizeBytes: buffer.length,
     mimeType,
