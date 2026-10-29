@@ -41,7 +41,11 @@ import {
   sendDriverPinEmail,
   sendPasswordResetEmail,
 } from '../services/email.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, type AuthenticatedUser } from '../middleware/auth.js';
+
+function getAuthUid(req: Request): string | undefined {
+  return (req.user as AuthenticatedUser | undefined)?.authUid;
+}
 import { getFirebaseAdminAuth } from '../services/firebaseAdmin.js';
 import { signServerJwt } from '../services/jwt.js';
 import { config } from '../config/index.js';
@@ -71,7 +75,7 @@ authRouter.post('/register-passenger', authenticate, async (req: Request, res: R
     if (!uid || typeof uid !== 'string') {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Identificador de usuário (uid) obrigatório.', 400);
     }
-    if (!req.user?.authUid || uid !== req.user.authUid) {
+    if (!getAuthUid(req) || uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.FORBIDDEN, 'O UID informado não corresponde à identidade autenticada.', 403);
     }
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
@@ -94,10 +98,10 @@ authRouter.post('/register-passenger', authenticate, async (req: Request, res: R
     const existingByEmail = await findUserByEmail(email);
     const existingByPhone = await findUserByWhatsApp(whatsapp);
 
-    if (existingByEmail && existingByEmail.uid !== req.user.authUid) {
+    if (existingByEmail && existingByEmail.uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este e-mail já está vinculado a outra identidade.', 409);
     }
-    if (existingByPhone && existingByPhone.uid !== req.user.authUid) {
+    if (existingByPhone && existingByPhone.uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este WhatsApp já está vinculado a outra identidade.', 409);
     }
 
@@ -116,7 +120,7 @@ authRouter.post('/register-passenger', authenticate, async (req: Request, res: R
       }
     }
 
-    const effectiveUid = req.user.authUid;
+    const effectiveUid = getAuthUid(req)!;
     const now = new Date().toISOString();
     const hasRecordCheck = Boolean(hasCriminalRecordCheck || criminalRecordUrl);
     const normalizedPhone = normalizeInternationalPhone(whatsapp);
@@ -276,7 +280,7 @@ authRouter.post('/register-driver', authenticate, async (req: Request, res: Resp
     } = req.body;
 
     if (!uid || typeof uid !== 'string') throw new AppError(ErrorCode.VALIDATION_ERROR, 'UID é obrigatório.', 400);
-    if (!req.user?.authUid || uid !== req.user.authUid) {
+    if (!getAuthUid(req) || uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.FORBIDDEN, 'O UID informado não corresponde à identidade autenticada.', 403);
     }
     if (!name || name.trim().length < 3) {
@@ -324,13 +328,13 @@ authRouter.post('/register-driver', authenticate, async (req: Request, res: Resp
     const dupPhone = await findUserByWhatsApp(whatsapp);
     const dupCpf = await findDriverByCpf(cpf);
 
-    if (dupEmail && dupEmail.uid !== req.user.authUid) {
+    if (dupEmail && dupEmail.uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este e-mail já está vinculado a outra identidade.', 409);
     }
-    if (dupPhone && dupPhone.uid !== req.user.authUid) {
+    if (dupPhone && dupPhone.uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este WhatsApp já está vinculado a outra identidade.', 409);
     }
-    if (dupCpf && dupCpf.uid !== req.user.authUid) {
+    if (dupCpf && dupCpf.uid !== getAuthUid(req)) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este CPF já está vinculado a outra identidade.', 409);
     }
 
@@ -339,7 +343,7 @@ authRouter.post('/register-driver', authenticate, async (req: Request, res: Resp
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Já existe cadastro com este CPF em outra conta.', 409);
     }
 
-    const effectiveUid = req.user.authUid;
+    const effectiveUid = getAuthUid(req)!;
     const now = new Date().toISOString();
     const normalizedPhone = normalizeInternationalPhone(whatsapp);
 
