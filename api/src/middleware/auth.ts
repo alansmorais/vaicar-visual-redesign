@@ -7,6 +7,8 @@ import { verifyServerJwt } from '../services/jwt.js';
 
 export interface AuthenticatedUser {
   uid: string;
+  /** Original UID verified from the bearer token; never replaced by profile lookup. */
+  authUid: string;
   email: string;
   role?: 'passenger' | 'driver' | 'admin';
   isAdmin?: boolean;
@@ -86,6 +88,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
     req.user = {
       uid: driverProfile?.uid || userProfile?.uid || decodedUid,
+      authUid: decodedUid,
       email: effectiveEmail,
       role,
       isAdmin,
