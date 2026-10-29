@@ -486,9 +486,9 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('allows the same user (same email & whatsapp) to also register as driver', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
-        .set('Authorization', `Bearer ${'test-dual-user-driver'}:registration-${'test-dual-user-driver'}@identity.test`)
+        .set('Authorization', `Bearer ${'test-dual-user-pass'}:registration-${'test-dual-user-pass'}@identity.test`)
         .send({
-          uid: 'test-dual-user-driver',
+          uid: 'test-dual-user-pass',
           name: 'Carlos Dual',
           cpf: '11144477735',
           birthDate: '1990-08-12',
@@ -519,7 +519,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('returns both passenger and driver profiles in /auth/me for dual account', async () => {
       const res = await request(app)
         .get('/api/v1/auth/me')
-        .set('Authorization', `Bearer test-dual-user-driver:${dualUserEmail}`);
+        .set('Authorization', `Bearer test-dual-user-pass:${dualUserEmail}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.user.isDriver).toBe(true);
