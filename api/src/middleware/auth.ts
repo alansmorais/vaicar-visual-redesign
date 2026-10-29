@@ -94,7 +94,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       isAdmin,
       isPassenger,
       isDriver,
-    };
+    } as typeof req.user;
 
     next();
   } catch (error) {
