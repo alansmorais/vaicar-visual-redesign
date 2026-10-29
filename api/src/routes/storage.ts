@@ -29,15 +29,32 @@ storageRouter.post('/upload', authenticate, async (req: Request, res: Response, 
       declaredMime = parts[0].replace(/^data:/, '').toLowerCase();
       base64Content = parts[1];
     }
-    // Remove all whitespace, line breaks or carriage returns from base64
-    base64Content = base64Content.replace(/\s+/g, '');
+    // Remove whitespace, then reject malformed base64. Buffer.from() alone silently
+    // ignores invalid characters, which can make validation differ from decoding.
+    base64Content = base64Content.replace(/\\s+/g, '');
+    if (
+      !base64Content ||
+      !/^[A-Za-z0-9+/]*={0,2}$/.test(base64Content) ||
+      base64Content.length % 4 === 1
+    ) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'Conteúdo base64 inválido.', 400);
+    }
 
     const buffer = Buffer.from(base64Content, 'base64');
-    let validation = validateImageBuffer(buffer);
+    if (buffer.toString('base64').replace(/=+$/, '') !== base64Content.replace(/=+$/, '')) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'Conteúdo base64 inválido.', 400);
+    }
 
-    // Profile uploads must pass magic-byte validation; declared MIME alone is never sufficient.
-    if (!validation.valid || !validation.mimeType || validation.mimeType === 'application/pdf') {
-      throw new AppError(ErrorCode.VALIDATION_ERROR, validation.error || 'Arquivo inválido. Envie imagem (JPG, PNG, WebP) ou documento PDF.', 400);
+    const validation = validateImageBuffer(buffer);
+
+    // Profile uploads must pass magic-byte validation; declared MIME must match file bytes.
+    if (
+      !validation.valid ||
+      !validation.mimeType ||
+      validation.mimeType === 'application/pdf' ||
+      (declaredMime && declaredMime !== validation.mimeType)
+    ) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, validation.error || 'O tipo declarado não corresponde ao conteúdo da imagem.', 400);
     }
 
     const ext = validation.mimeType === 'image/jpeg'
