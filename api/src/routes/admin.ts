@@ -165,7 +165,7 @@ adminRouter.post('/drivers/:id/approve', async (req: Request, res: Response, nex
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -216,7 +216,7 @@ adminRouter.post('/drivers/:id/reject', async (req: Request, res: Response, next
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -267,7 +267,7 @@ adminRouter.post('/drivers/:id/suspend', async (req: Request, res: Response, nex
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -302,7 +302,7 @@ adminRouter.post('/drivers/:id/request-docs', async (req: Request, res: Response
       success: true,
       requestId: req.id,
       message: 'Solicitação de documentos enviada por e-mail com sucesso.',
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -378,7 +378,7 @@ adminRouter.post('/passengers/:id/block', async (req: Request, res: Response, ne
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
