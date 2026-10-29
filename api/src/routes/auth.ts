@@ -43,6 +43,7 @@ import {
 } from '../services/email.js';
 import { authenticate, type AuthenticatedUser } from '../middleware/auth.js';
 
+/** Reads the verified token UID without relying on Express's narrower req.user declaration. */
 function getAuthUid(req: Request): string | undefined {
   return (req.user as AuthenticatedUser | undefined)?.authUid;
 }
