@@ -57,6 +57,20 @@ describe('VaiCar Platform - API Automated Tests', () => {
       expect(res.headers['content-type']).not.toContain('application/pdf');
     });
 
+    it('does not serve legacy photo/file aliases from public uploads', async () => {
+      const photo = await request(app).get('/uploads/drivers/sensitive-user/photo.jpg');
+      const file = await request(app).get('/uploads/drivers/sensitive-user/file.jpg');
+      expect(photo.status).toBe(404);
+      expect(file.status).toBe(404);
+    });
+
+    it('does not serve profile files with mismatched or unsupported extensions', async () => {
+      const pdf = await request(app).get('/uploads/drivers/sensitive-user/profile.pdf');
+      const jpegAlias = await request(app).get('/uploads/drivers/sensitive-user/profile.jpeg');
+      expect(pdf.status).toBe(404);
+      expect(jpegAlias.status).toBe(404);
+    });
+
     it('rejects profile image upload without authentication', async () => {
       const res = await request(app)
         .post('/api/v1/storage/upload')
