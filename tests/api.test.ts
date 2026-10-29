@@ -159,6 +159,16 @@ describe('VaiCar Platform - API Automated Tests', () => {
   });
 
   describe('Driver Registration & Approval Flow', () => {
+    it('rejects driver registration when the submitted UID differs from the authenticated identity', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register-driver')
+        .set('Authorization', 'Bearer verified-driver:registration-verified-driver@identity.test')
+        .send({ uid: 'different-driver-uid' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
     it('rejects driver with invalid CPF', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
