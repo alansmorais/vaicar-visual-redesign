@@ -44,7 +44,7 @@ import { getStoredFile } from './services/storage.js';
 app.get('/uploads/*', async (req, res, next) => {
   try {
     const relPath = req.path.replace(/^\/uploads\/?/, '');
-    const publicProfileImage = /^(users|passengers|drivers)\/[A-Za-z0-9_-]+\/(?:profile|photo|file)\.(?:jpg|jpeg|png|webp)$/i;
+    const publicProfileImage = /^(users|passengers|drivers)\/[A-Za-z0-9_-]+\/profile\.(?:jpg|png|webp)$/i;
     if (!publicProfileImage.test(relPath)) {
       return res.status(404).send('Arquivo não encontrado');
     }
