@@ -43,8 +43,9 @@ import { formatRidePayload, approveRidePaymentHandler } from './rides.js';
 export const driversRouter = Router();
 
 /** Prevent legacy sensitive document URLs from being re-exposed by self-service profile APIs. */
-function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
+function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'idDocumentUrl' | 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
   const {
+    idDocumentUrl: _idDocumentUrl,
     cnhUrl: _cnhUrl,
     crlvUrl: _crlvUrl,
     proofOfAddressUrl: _proofOfAddressUrl,
@@ -217,7 +218,7 @@ driversRouter.post('/auth', async (req: Request, res: Response, next: NextFuncti
         success: true,
         requestId: req.id,
         token,
-        driver: activeDriver,
+        driver: withoutSensitiveDocumentUrls(activeDriver),
         message: 'Motorista autenticado com sucesso no VaiCar Cockpit.',
       });
     }
@@ -250,7 +251,7 @@ driversRouter.post('/auth', async (req: Request, res: Response, next: NextFuncti
         success: true,
         requestId: req.id,
         token,
-        driver: activeDriver,
+        driver: withoutSensitiveDocumentUrls(activeDriver),
         message: 'PIN verificado com sucesso.',
       });
     }
