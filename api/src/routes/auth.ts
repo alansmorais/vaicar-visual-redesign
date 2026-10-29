@@ -53,7 +53,7 @@ export const authRouter = Router();
  * Passenger Registration
  * Required: name, whatsapp, email, photoUrl, termsAccepted
  */
-authRouter.post('/register-passenger', async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/register-passenger', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       uid,
@@ -70,6 +70,9 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
 
     if (!uid || typeof uid !== 'string') {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Identificador de usuário (uid) obrigatório.', 400);
+    }
+    if (!req.user?.uid || uid !== req.user.uid) {
+      throw new AppError(ErrorCode.FORBIDDEN, 'O UID informado não corresponde à identidade autenticada.', 403);
     }
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Nome completo é obrigatório.', 400);
@@ -91,6 +94,13 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
     const existingByEmail = await findUserByEmail(email);
     const existingByPhone = await findUserByWhatsApp(whatsapp);
 
+    if (existingByEmail && existingByEmail.uid !== req.user.uid) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este e-mail já está vinculado a outra identidade.', 409);
+    }
+    if (existingByPhone && existingByPhone.uid !== req.user.uid) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este WhatsApp já está vinculado a outra identidade.', 409);
+    }
+
     // If an account with this email already exists with a passenger profile belonging to a different user, reject
     if (existingByEmail) {
       const existingPassenger = await getPassengerProfile(existingByEmail.uid);
@@ -106,7 +116,7 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
       }
     }
 
-    const effectiveUid = existingByEmail ? existingByEmail.uid : existingByPhone ? existingByPhone.uid : uid;
+    const effectiveUid = req.user.uid;
     const now = new Date().toISOString();
     const hasRecordCheck = Boolean(hasCriminalRecordCheck || criminalRecordUrl);
     const normalizedPhone = normalizeInternationalPhone(whatsapp);
@@ -244,7 +254,7 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
  * Driver Registration
  * Required: name, cpf, birthDate, whatsapp, email, photoUrl, professionalCategory, cnhNumber, vehicle, operatingZones
  */
-authRouter.post('/register-driver', async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/register-driver', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       uid,
@@ -265,7 +275,10 @@ authRouter.post('/register-driver', async (req: Request, res: Response, next: Ne
       operatingZones,
     } = req.body;
 
-    if (!uid) throw new AppError(ErrorCode.VALIDATION_ERROR, 'UID é obrigatório.', 400);
+    if (!uid || typeof uid !== 'string') throw new AppError(ErrorCode.VALIDATION_ERROR, 'UID é obrigatório.', 400);
+    if (!req.user?.uid || uid !== req.user.uid) {
+      throw new AppError(ErrorCode.FORBIDDEN, 'O UID informado não corresponde à identidade autenticada.', 403);
+    }
     if (!name || name.trim().length < 3) {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Nome completo é obrigatório.', 400);
     }
@@ -311,12 +324,22 @@ authRouter.post('/register-driver', async (req: Request, res: Response, next: Ne
     const dupPhone = await findUserByWhatsApp(whatsapp);
     const dupCpf = await findDriverByCpf(cpf);
 
+    if (dupEmail && dupEmail.uid !== req.user.uid) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este e-mail já está vinculado a outra identidade.', 409);
+    }
+    if (dupPhone && dupPhone.uid !== req.user.uid) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este WhatsApp já está vinculado a outra identidade.', 409);
+    }
+    if (dupCpf && dupCpf.uid !== req.user.uid) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este CPF já está vinculado a outra identidade.', 409);
+    }
+
     // If CPF belongs to a completely different user account with different email and phone, reject
     if (dupCpf && (!dupEmail || dupCpf.uid !== dupEmail.uid) && (!dupPhone || dupCpf.uid !== dupPhone.uid) && dupCpf.uid !== uid) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Já existe cadastro com este CPF em outra conta.', 409);
     }
 
-    const effectiveUid = dupEmail ? dupEmail.uid : dupPhone ? dupPhone.uid : dupCpf ? dupCpf.uid : uid;
+    const effectiveUid = req.user.uid;
     const now = new Date().toISOString();
     const normalizedPhone = normalizeInternationalPhone(whatsapp);
 
