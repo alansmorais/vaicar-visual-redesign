@@ -47,6 +47,31 @@ import { authenticate, type AuthenticatedUser } from '../middleware/auth.js';
 function getAuthUid(req: Request): string | undefined {
   return (req.user as AuthenticatedUser | undefined)?.authUid;
 }
+
+/**
+ * Sensitive document URLs are disabled until the private Drive flow is implemented.
+ * Accepting arbitrary URLs here could persist public or attacker-controlled links.
+ */
+function rejectLegacySensitiveDocumentUrls(req: Request): void {
+  const fields = [
+    'idDocumentUrl',
+    'criminalRecordUrl',
+    'cnhUrl',
+    'crlvUrl',
+    'proofOfAddressUrl',
+  ];
+  const supplied = fields.filter((field) => {
+    const value = req.body?.[field];
+    return value !== undefined && value !== null && String(value).trim() !== '';
+  });
+  if (supplied.length) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'O envio de documentos está temporariamente desativado até a ativação do armazenamento privado seguro.',
+      400,
+    );
+  }
+}
 import { getFirebaseAdminAuth } from '../services/firebaseAdmin.js';
 import { signServerJwt } from '../services/jwt.js';
 import { config } from '../config/index.js';
@@ -72,6 +97,8 @@ authRouter.post('/register-passenger', authenticate, async (req: Request, res: R
       idDocumentUrl,
       referralCode,
     } = req.body;
+
+    rejectLegacySensitiveDocumentUrls(req);
 
     if (!uid || typeof uid !== 'string') {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Identificador de usuário (uid) obrigatório.', 400);
@@ -279,6 +306,8 @@ authRouter.post('/register-driver', authenticate, async (req: Request, res: Resp
       vehicle,
       operatingZones,
     } = req.body;
+
+    rejectLegacySensitiveDocumentUrls(req);
 
     if (!uid || typeof uid !== 'string') throw new AppError(ErrorCode.VALIDATION_ERROR, 'UID é obrigatório.', 400);
     if (!getAuthUid(req) || uid !== getAuthUid(req)) {
