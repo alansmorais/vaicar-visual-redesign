@@ -1,0 +1,40 @@
+name: VaiCar registration identity guard tests
+
+on:
+  push:
+    branches:
+      - security/registration-identity-guard
+    paths:
+      - "api/**"
+      - "shared/**"
+      - "tests/api.test.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "api/tsconfig.json"
+      - ".github/workflows/registration-identity-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-build-and-registration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated test branch
+        uses: actions/checkout@v4
+        with:
+          ref: security/registration-identity-guard
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Compile API TypeScript
+        run: npm run build:api
+      - name: Run API tests
+        env:
+          NODE_ENV: test
+        run: npm test -- tests/api.test.ts
