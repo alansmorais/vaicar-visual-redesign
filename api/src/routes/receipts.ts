@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, AuthenticatedUser } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { ErrorCode } from '../../../shared/src/errors.js';
 import { getReceipt, getRide } from '../services/firestore.js';
@@ -30,7 +30,7 @@ function escapeHtml(value: unknown): string {
 
 receiptsRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const receipt = await getAuthorizedReceipt(String(req.params.id), req.user!.authUid, Boolean(req.user!.isAdmin || req.user!.role === 'admin'));
+    const receipt = await getAuthorizedReceipt(String(req.params.id), (req.user as AuthenticatedUser).authUid, Boolean(req.user!.isAdmin || req.user!.role === 'admin'));
 
     res.json({
       success: true,
