@@ -44,7 +44,7 @@ receiptsRouter.get('/:id', async (req: Request, res: Response, next: NextFunctio
 
 receiptsRouter.get('/:id/html', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const receipt = await getAuthorizedReceipt(String(req.params.id), req.user!.authUid, Boolean(req.user!.isAdmin || req.user!.role === 'admin'));
+    const receipt = await getAuthorizedReceipt(String(req.params.id), (req.user as AuthenticatedUser).authUid, Boolean(req.user!.isAdmin || req.user!.role === 'admin'));
 
     const html = `
       <!DOCTYPE html>
