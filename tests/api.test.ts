@@ -51,6 +51,12 @@ describe('VaiCar Platform - API Automated Tests', () => {
   });
 
   describe('Authenticated profile image uploads', () => {
+    it('does not publicly serve sensitive PDF document paths', async () => {
+      const res = await request(app).get('/uploads/drivers/sensitive-user/file.pdf');
+      expect(res.status).toBe(404);
+      expect(res.headers['content-type']).not.toContain('application/pdf');
+    });
+
     it('rejects profile image upload without authentication', async () => {
       const res = await request(app)
         .post('/api/v1/storage/upload')
