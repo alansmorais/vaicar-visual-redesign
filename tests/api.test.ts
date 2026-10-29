@@ -2085,7 +2085,6 @@ describe('VaiCar Platform - API Automated Tests', () => {
           photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
           professionalCategory: 'Entregador / Ciclista',
           cnhNumber: 'ISENTO_BIKE',
-          criminalRecordUrl: 'https://storage.vaicar.app/drivers/records.pdf',
           subscriptionPlan: 'monthly_100',
           servicesOffered: ['ride', 'delivery'], // should be locked down to ['delivery']
           vehicle: {
