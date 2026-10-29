@@ -38,6 +38,19 @@ import { listDeliveryWaitlist } from '../services/deliveryWaitlist.js';
 
 export const adminRouter = Router();
 
+/** Admin list endpoints should not expose legacy document URLs; private access will use an audited document endpoint. */
+function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'idDocumentUrl' | 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
+  const {
+    idDocumentUrl: _idDocumentUrl,
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 // Enforce admin authentication
 adminRouter.use(authenticate, requireAdmin);
 
@@ -91,7 +104,7 @@ adminRouter.get('/drivers', async (req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       requestId: req.id,
-      data: drivers,
+      data: drivers.map((driver) => withoutSensitiveDocumentUrls(driver)),
     });
   } catch (error) {
     next(error);
@@ -338,7 +351,7 @@ adminRouter.get('/passengers', async (req: Request, res: Response, next: NextFun
     res.json({
       success: true,
       requestId: req.id,
-      data: passengers,
+      data: passengers.map((passenger) => withoutSensitiveDocumentUrls(passenger)),
     });
   } catch (error) {
     next(error);
