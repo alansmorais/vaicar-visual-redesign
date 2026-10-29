@@ -42,6 +42,18 @@ import { formatRidePayload, approveRidePaymentHandler } from './rides.js';
 
 export const driversRouter = Router();
 
+/** Prevent legacy sensitive document URLs from being re-exposed by self-service profile APIs. */
+function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
+  const {
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 /**
  * Public route for passengers to view online approved drivers on map
  */
@@ -285,7 +297,7 @@ driversRouter.get('/me', async (req: Request, res: Response, next: NextFunction)
     res.json({
       success: true,
       requestId: req.id,
-      data: driver,
+      data: withoutSensitiveDocumentUrls(driver),
     });
   } catch (error) {
     next(error);
@@ -601,7 +613,7 @@ driversRouter.patch('/me', async (req: Request, res: Response, next: NextFunctio
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
