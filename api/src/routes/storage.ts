@@ -2,12 +2,21 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler.js';
 import { ErrorCode } from '../../../shared/src/errors.js';
 import { validateImageBuffer, storeImage } from '../services/storage.js';
+import { authenticate, type AuthenticatedUser } from '../middleware/auth.js';
 
 export const storageRouter = Router();
 
-storageRouter.post('/upload', async (req: Request, res: Response, next: NextFunction) => {
+storageRouter.post('/upload', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { fileData, pathPrefix, uid } = req.body;
+    const authUid = (req.user as AuthenticatedUser | undefined)?.authUid;
+    if (!authUid || typeof uid !== 'string' || uid !== authUid) {
+      throw new AppError(ErrorCode.FORBIDDEN, 'O UID do upload não corresponde à identidade autenticada.', 403);
+    }
+    // This endpoint is only for profile images. Sensitive documents require a separate private-storage flow.
+    if (pathPrefix !== undefined && !['users', 'passengers', 'drivers'].includes(pathPrefix)) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, 'Tipo de upload não permitido neste endpoint.', 400);
+    }
     if (!fileData || typeof fileData !== 'string') {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Dados do arquivo de imagem não fornecidos.', 400);
     }
@@ -26,15 +35,8 @@ storageRouter.post('/upload', async (req: Request, res: Response, next: NextFunc
     const buffer = Buffer.from(base64Content, 'base64');
     let validation = validateImageBuffer(buffer);
 
-    // If buffer magic bytes fell through but declared MIME is a standard image and safety check passes
-    if (!validation.valid && declaredMime && ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(declaredMime)) {
-      const headerStr = buffer.toString('utf-8', 0, Math.min(buffer.length, 100)).toLowerCase();
-      if (!headerStr.includes('<svg') && !headerStr.includes('<?xml') && !headerStr.includes('<html')) {
-        validation = { valid: true, mimeType: declaredMime === 'image/jpg' ? 'image/jpeg' : declaredMime };
-      }
-    }
-
-    if (!validation.valid || !validation.mimeType) {
+    // Profile uploads must pass magic-byte validation; declared MIME alone is never sufficient.
+    if (!validation.valid || !validation.mimeType || validation.mimeType === 'application/pdf') {
       throw new AppError(ErrorCode.VALIDATION_ERROR, validation.error || 'Arquivo inválido. Envie imagem (JPG, PNG, WebP) ou documento PDF.', 400);
     }
 
@@ -46,9 +48,9 @@ storageRouter.post('/upload', async (req: Request, res: Response, next: NextFunc
       ? 'png'
       : 'webp';
 
-    const folder = pathPrefix ? pathPrefix.replace(/^\/|\/$/g, '') : 'users';
-    const userPart = uid || `anon-${Date.now()}`;
-    const storagePath = `${folder}/${userPart}/file.${ext}`;
+    const folder = pathPrefix || 'users';
+    const userPart = authUid;
+    const storagePath = `${folder}/${userPart}/profile.${ext}`;
 
     const uploadResult = await storeImage(storagePath, buffer, validation.mimeType);
 
