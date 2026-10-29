@@ -699,7 +699,7 @@ driversRouter.post('/change-plan', async (req: Request, res: Response, next: Nex
       success: true,
       requestId: req.id,
       data: {
-        driver: updated,
+        driver: withoutSensitiveDocumentUrls(updated),
         message: `Plano alterado com sucesso para ${
           plan === 'weekly_percent_10'
             ? '10% Semanal (Acerto Semanal)'
