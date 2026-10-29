@@ -79,6 +79,20 @@ import { UserProfile, PassengerProfile, DriverProfile, ReferralRecord } from '..
 
 export const authRouter = Router();
 
+/** Keep legacy sensitive document URLs out of client-facing profile responses. */
+function withoutSensitiveDocumentUrls(profile: any): any {
+  if (!profile || typeof profile !== 'object') return profile;
+  const {
+    idDocumentUrl: _idDocumentUrl,
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 /**
  * Passenger Registration
  * Required: name, whatsapp, email, photoUrl, termsAccepted
@@ -273,7 +287,7 @@ authRouter.post('/register-passenger', authenticate, async (req: Request, res: R
       requestId: req.id,
       data: {
         user: userProfile,
-        passenger: passengerProfile,
+        passenger: withoutSensitiveDocumentUrls(passengerProfile),
         emailStatus,
       },
     });
@@ -457,7 +471,7 @@ authRouter.post('/register-driver', authenticate, async (req: Request, res: Resp
       requestId: req.id,
       data: {
         user: userProfile,
-        driver: driverProfile,
+        driver: withoutSensitiveDocumentUrls(driverProfile),
         emailStatus,
       },
     });
@@ -995,10 +1009,10 @@ authRouter.get('/me', authenticate, async (req: Request, res: Response, next: Ne
       requestId: req.id,
       data: {
         user: userWithRoles,
-        passenger,
-        driver,
-        passengerProfile: passenger,
-        driverProfile: driver,
+        passenger: withoutSensitiveDocumentUrls(passenger),
+        driver: withoutSensitiveDocumentUrls(driver),
+        passengerProfile: withoutSensitiveDocumentUrls(passenger),
+        driverProfile: withoutSensitiveDocumentUrls(driver),
         isAdmin: req.user!.isAdmin || user?.isAdmin || false,
       },
     });
