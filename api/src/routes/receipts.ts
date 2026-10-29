@@ -1,14 +1,36 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { ErrorCode } from '../../../shared/src/errors.js';
-import { getReceipt } from '../services/firestore.js';
+import { getReceipt, getRide } from '../services/firestore.js';
 
 export const receiptsRouter = Router();
 
+// Receipt IDs are identifiers, not authorization. Only the assigned passenger,
+// driver, or an authenticated admin may access the receipt.
+receiptsRouter.use(authenticate);
+
+async function getAuthorizedReceipt(receiptId: string, uid: string, isAdmin: boolean) {
+  const receipt = await getReceipt(receiptId);
+  if (!receipt) throw new AppError(ErrorCode.NOT_FOUND, 'Recibo não encontrado.', 404);
+  if (isAdmin) return receipt;
+
+  const ride = await getRide(receipt.rideId);
+  if (!ride || (ride.passengerId !== uid && ride.driverId !== uid)) {
+    throw new AppError(ErrorCode.FORBIDDEN, 'Você não tem autorização para acessar este recibo.', 403);
+  }
+  return receipt;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[char] as string));
+}
+
 receiptsRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const receipt = await getReceipt(String(req.params.id));
-    if (!receipt) throw new AppError(ErrorCode.NOT_FOUND, 'Recibo não encontrado.', 404);
+    const receipt = await getAuthorizedReceipt(String(req.params.id), req.user!.uid, Boolean(req.user!.isAdmin || req.user!.role === 'admin'));
 
     res.json({
       success: true,
@@ -30,7 +52,7 @@ receiptsRouter.get('/:id/html', async (req: Request, res: Response, next: NextFu
       <html lang="pt-BR">
       <head>
         <meta charset="UTF-8">
-        <title>Recibo VaiCar - ${receipt.receiptNumber}</title>
+        <title>Recibo VaiCar - ${escapeHtml(receipt.receiptNumber)}</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #020617; color: #F8FAFC; margin: 0; padding: 40px; display: flex; justify-content: center; }
           .receipt-card { background: #0F172A; border: 1px solid #16A34A; border-radius: 16px; padding: 32px; max-width: 500px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
@@ -62,24 +84,24 @@ receiptsRouter.get('/:id/html', async (req: Request, res: Response, next: NextFu
         <div class="receipt-card">
           <div class="header">
             <div class="logo">VAI<span>CAR</span></div>
-            <div class="number">Recibo Oficial nº ${receipt.receiptNumber}</div>
+            <div class="number">Recibo Oficial nº ${escapeHtml(receipt.receiptNumber)}</div>
             <div style="font-size: 12px; color: #94A3B8; margin-top: 4px;">São Sebastião — Litoral Norte SP</div>
           </div>
           <div class="amount-box">
             <div class="amount-label">Valor Pago</div>
             <div class="amount">R$ ${receipt.fareAmount.toFixed(2)}</div>
-            <div style="font-size: 13px; color: #CBD5E1;">${receipt.paymentMethod} • ${receipt.paymentStatus}</div>
+            <div style="font-size: 13px; color: #CBD5E1;">${escapeHtml(receipt.paymentMethod)} • ${escapeHtml(receipt.paymentStatus)}</div>
           </div>
-          <div class="row"><span class="label">Passageiro</span><span class="val">${receipt.passengerName}</span></div>
-          <div class="row"><span class="label">Motorista</span><span class="val">${receipt.driverName}</span></div>
-          <div class="row"><span class="label">Veículo</span><span class="val">${receipt.vehicleDescription} (${receipt.vehiclePlate})</span></div>
+          <div class="row"><span class="label">Passageiro</span><span class="val">${escapeHtml(receipt.passengerName)}</span></div>
+          <div class="row"><span class="label">Motorista</span><span class="val">${escapeHtml(receipt.driverName)}</span></div>
+          <div class="row"><span class="label">Veículo</span><span class="val">${escapeHtml(receipt.vehicleDescription)} (${escapeHtml(receipt.vehiclePlate)})</span></div>
           <div class="row"><span class="label">Data / Hora</span><span class="val">${new Date(receipt.dateTime).toLocaleString('pt-BR')}</span></div>
           <div class="row"><span class="label">Distância</span><span class="val">${receipt.distanceKm.toFixed(1)} km</span></div>
           <div class="row"><span class="label">Duração</span><span class="val">${receipt.durationMinutes} minutos</span></div>
 
           <div class="addresses">
-            <div class="addr-item"><span class="addr-tag">Partida:</span> ${receipt.originAddress}</div>
-            <div class="addr-item"><span class="addr-tag">Destino:</span> ${receipt.destinationAddress}</div>
+            <div class="addr-item"><span class="addr-tag">Partida:</span> ${escapeHtml(receipt.originAddress)}</div>
+            <div class="addr-item"><span class="addr-tag">Destino:</span> ${escapeHtml(receipt.destinationAddress)}</div>
           </div>
 
           <div class="footer">
