@@ -51,9 +51,28 @@ describe('VaiCar Platform - API Automated Tests', () => {
   });
 
   describe('Passenger Registration Validation', () => {
+    it('rejects passenger registration without an authentication token', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register-passenger')
+        .send({ uid: 'missing-auth-uid' });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects a client-supplied UID that differs from the authenticated identity', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register-passenger')
+        .set('Authorization', 'Bearer verified-owner:registration-verified-owner@identity.test')
+        .send({ uid: 'different-client-uid' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
     it('rejects registration with missing WhatsApp', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'p-invalid-phone'}:registration-${'p-invalid-phone'}@identity.test`)
         .send({
           uid: 'p-invalid-phone',
           name: 'João Silva',
@@ -71,6 +90,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects registration with fake local email', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'p-invalid-email'}:registration-${'p-invalid-email'}@identity.test`)
         .send({
           uid: 'p-invalid-email',
           name: 'João Silva',
@@ -87,6 +107,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects registration with missing photo', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'p-invalid-photo'}:registration-${'p-invalid-photo'}@identity.test`)
         .send({
           uid: 'p-invalid-photo',
           name: 'João Silva',
@@ -103,6 +124,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('successfully registers valid passenger and creates account', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-pass-01'}:registration-${'test-pass-01'}@identity.test`)
         .send({
           uid: 'test-pass-01',
           name: 'Maria Fernandes',
@@ -121,6 +143,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects duplicate registration with identical email', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-pass-dup'}:registration-${'test-pass-dup'}@identity.test`)
         .send({
           uid: 'test-pass-dup',
           name: 'Outra Maria',
@@ -139,6 +162,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects driver with invalid CPF', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'d-inv-cpf'}:registration-${'d-inv-cpf'}@identity.test`)
         .send({
           uid: 'd-inv-cpf',
           name: 'Carlos Oliveira',
@@ -160,6 +184,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects driver under 18 years old', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'d-minor'}:registration-${'d-minor'}@identity.test`)
         .send({
           uid: 'd-minor',
           name: 'Jovem Oliveira',
@@ -181,6 +206,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('successfully registers valid driver in PENDING_APPROVAL status', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'test-driv-01'}:registration-${'test-driv-01'}@identity.test`)
         .send({
           uid: 'test-driv-01',
           name: 'Carlos Santos',
@@ -409,6 +435,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('accepts passenger registration with relative /uploads/ path', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-pass-relative-upload'}:registration-${'test-pass-relative-upload'}@identity.test`)
         .send({
           uid: 'test-pass-relative-upload',
           name: 'Renata Litoral',
@@ -431,6 +458,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('allows passenger registration with international phone format', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-dual-user-pass'}:registration-${'test-dual-user-pass'}@identity.test`)
         .send({
           uid: 'test-dual-user-pass',
           name: 'Carlos Dual',
@@ -448,6 +476,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('allows the same user (same email & whatsapp) to also register as driver', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'test-dual-user-driver'}:registration-${'test-dual-user-driver'}@identity.test`)
         .send({
           uid: 'test-dual-user-driver',
           name: 'Carlos Dual',
@@ -498,6 +527,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('registers a test passenger for non-payment testing', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${victimPassengerUid}:registration-${victimPassengerUid}@identity.test`)
         .send({
           uid: victimPassengerUid,
           name: 'Caloteiro Teste',
@@ -658,6 +688,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('registers a test driver with monthly_100 plan and plan dates', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${planDriverUid}:registration-${planDriverUid}@identity.test`)
         .send({
           uid: planDriverUid,
           name: 'Motorista Planos',
@@ -973,6 +1004,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('registers driver under origUid and approves via admin', async () => {
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${origUid}:registration-${origUid}@identity.test`)
         .send({
           uid: origUid,
           name: 'Renato Motorista Real',
@@ -1036,6 +1068,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // Register passenger
       const passRes = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passUid}:registration-${passUid}@identity.test`)
         .send({
           uid: passUid,
           name: 'Passageiro Comparador',
@@ -1049,6 +1082,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // Register driver
       const drvRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${driverUid}:registration-${driverUid}@identity.test`)
         .send({
           uid: driverUid,
           name: 'Carlos Motorista Empreendedor',
@@ -1408,6 +1442,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Register passenger
       const pRes = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${stage1PassUid}:registration-${stage1PassUid}@identity.test`)
         .send({
           uid: stage1PassUid,
           name: 'Cliente Entrega',
@@ -1421,6 +1456,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 2. Register motorcycle courier with monthly_100 plan
       const dRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage1CourierUid}:registration-${stage1CourierUid}@identity.test`)
         .send({
           uid: stage1CourierUid,
           name: 'Entregador Moto',
@@ -1450,6 +1486,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 3. Register bicycle courier
       const bRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage1BikeUid}:registration-${stage1BikeUid}@identity.test`)
         .send({
           uid: stage1BikeUid,
           name: 'Ciclista Entregador',
@@ -1690,6 +1727,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Passenger registration
       const passRes = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${stage2PassUid}:registration-${stage2PassUid}@identity.test`)
         .send({
           uid: stage2PassUid,
           name: 'Cliente Entrega VaiCar',
@@ -1703,6 +1741,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 2. Bicycle courier registration
       const bikeRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage2BikeUid}:registration-${stage2BikeUid}@identity.test`)
         .send({
           uid: stage2BikeUid,
           name: 'Entregador Ciclista Stg2',
@@ -1860,6 +1899,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       stage3PassToken = `${stage3PassUid}:${stage3PassEmail}`;
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${stage3PassUid}:registration-${stage3PassUid}@identity.test`)
         .send({
           uid: stage3PassUid,
           name: 'Cliente Etapa 3',
@@ -1877,6 +1917,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       stage3CarDriverToken = `${stage3CarDriverUid}:${stage3CarDriverEmail}`;
       const carReg = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage3CarDriverUid}:registration-${stage3CarDriverUid}@identity.test`)
         .send({
           uid: stage3CarDriverUid,
           name: 'Motorista Multi-Serviço',
@@ -1909,6 +1950,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       stage3BikeDriverToken = `${stage3BikeDriverUid}:${stage3BikeDriverEmail}`;
       const bikeReg = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage3BikeDriverUid}:registration-${stage3BikeDriverUid}@identity.test`)
         .send({
           uid: stage3BikeDriverUid,
           name: 'Ciclista Entregador',
@@ -2294,6 +2336,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${p100DriverUid}:registration-${p100DriverUid}@identity.test`)
         .send({
           uid: p100DriverUid,
           name: 'Motorista Plano 100',
@@ -2341,6 +2384,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     beforeAll(async () => {
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${`old-driver-${Date.now()}`}:registration-${`old-driver-${Date.now()}`}@identity.test`)
         .send({
           uid: `old-driver-${Date.now()}`,
           name: 'Motorista Legado',
@@ -2552,6 +2596,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       const pUid = `pass-uni-${Date.now()}`;
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${pUid}:registration-${pUid}@identity.test`)
         .send({
           uid: pUid,
           name: 'Passageiro Unificado',
@@ -2758,6 +2803,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Create Passengers
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passengerUid}:registration-${passengerUid}@identity.test`)
         .send({
           uid: passengerUid,
           name: 'Passageiro Dispatch Test',
@@ -2769,6 +2815,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passenger2Uid}:registration-${passenger2Uid}@identity.test`)
         .send({
           uid: passenger2Uid,
           name: 'Passageiro Dispatch Test 2',
@@ -2780,6 +2827,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passenger3Uid}:registration-${passenger3Uid}@identity.test`)
         .send({
           uid: passenger3Uid,
           name: 'Passageiro Dispatch Test 3',
