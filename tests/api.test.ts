@@ -120,6 +120,51 @@ describe('VaiCar Platform - API Automated Tests', () => {
     });
   });
 
+  describe('Sensitive document URL safety gate', () => {
+    it('rejects public or arbitrary document URLs during passenger registration', async () => {
+      const uid = `private-doc-pass-${Date.now()}`;
+      const res = await request(app)
+        .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${uid}:private-doc-pass@identity.test`)
+        .send({
+          uid,
+          name: 'Passageiro Teste',
+          whatsapp: '+5512991234567',
+          email: `private-doc-pass-${Date.now()}@teste.vaicar.app`,
+          photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+          termsAccepted: true,
+          idDocumentUrl: 'https://example.com/public/id.pdf',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('armazenamento privado seguro');
+    });
+
+    it('rejects document URLs during driver registration until private storage is implemented', async () => {
+      const uid = `private-doc-driver-${Date.now()}`;
+      const res = await request(app)
+        .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${uid}:private-doc-driver@identity.test`)
+        .send({
+          uid,
+          name: 'Motorista Teste',
+          cpf: generateValidTestCpf(),
+          birthDate: '1990-01-01',
+          whatsapp: '+5512991234568',
+          email: `private-doc-driver-${Date.now()}@teste.vaicar.app`,
+          photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+          professionalCategory: 'Motorista Autônomo',
+          cnhNumber: '12345678901',
+          cnhUrl: 'https://example.com/public/cnh.pdf',
+          vehicle: { type: 'car', brand: 'Fiat', model: 'Argo', year: 2022, color: 'Preto', plate: 'ABC1D23' },
+          operatingZones: ['Centro & Porto Grande'],
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('armazenamento privado seguro');
+    });
+  });
+
   describe('Passenger Registration Validation', () => {
     it('rejects passenger registration without an authentication token', async () => {
       const res = await request(app)
@@ -2008,7 +2053,6 @@ describe('VaiCar Platform - API Automated Tests', () => {
           photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
           professionalCategory: 'Motorista Autônomo e Entregador',
           cnhNumber: '12345678901',
-          criminalRecordUrl: 'https://storage.vaicar.app/drivers/records.pdf',
           subscriptionPlan: 'monthly_100',
           servicesOffered: ['ride', 'delivery'],
           vehicle: {
