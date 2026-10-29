@@ -2502,14 +2502,15 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
   describe('Phase 3 - Cryptographic Authentication & Account Migration Security', () => {
     const testMigEmail = `driver.mig.${Date.now()}@teste.vaicar.app`;
+    const testMigRequestedUid = `old-driver-${Date.now()}`;
     let testMigDriverUid = '';
 
     beforeAll(async () => {
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
-        .set('Authorization', `Bearer ${`old-driver-${Date.now()}`}:registration-${`old-driver-${Date.now()}`}@identity.test`)
+        .set('Authorization', `Bearer ${testMigRequestedUid}:registration-${testMigRequestedUid}@identity.test`)
         .send({
-          uid: `old-driver-${Date.now()}`,
+          uid: testMigRequestedUid,
           name: 'Motorista Legado',
           cpf: generateValidTestCpf(),
           birthDate: '1988-04-12',
