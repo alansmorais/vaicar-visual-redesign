@@ -50,6 +50,35 @@ describe('VaiCar Platform - API Automated Tests', () => {
     expect(res.body.requestId).toBeDefined();
   });
 
+  describe('Authenticated profile image uploads', () => {
+    it('rejects profile image upload without authentication', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .send({ uid: 'some-user', fileData: 'data:image/png;base64,AAAA' });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects profile image upload when body UID differs from verified identity', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'different-user', fileData: 'data:image/png;base64,AAAA' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('rejects attempts to use the profile upload endpoint for sensitive document folders', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'verified-upload-owner', pathPrefix: 'drivers/cnh', fileData: 'data:image/png;base64,AAAA' });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
   describe('Passenger Registration Validation', () => {
     it('rejects passenger registration without an authentication token', async () => {
       const res = await request(app)
