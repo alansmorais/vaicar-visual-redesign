@@ -537,8 +537,18 @@ driversRouter.patch('/me', async (req: Request, res: Response, next: NextFunctio
       customDeliveryPricing,
     } = req.body;
 
+    // Sensitive documents must use the private storage flow, not caller-supplied URLs.
+    const sensitiveDocumentFields = [cnhUrl, crlvUrl, proofOfAddressUrl, criminalRecordUrl];
+    if (sensitiveDocumentFields.some((value) => value !== undefined && value !== null && String(value).trim() !== '')) {
+      throw new AppError(
+        ErrorCode.VALIDATION_ERROR,
+        'O envio de documentos está temporariamente desativado até a ativação do armazenamento privado seguro.',
+        400,
+      );
+    }
+
     const now = new Date().toISOString();
-    const hasNewDocs = cnhUrl || crlvUrl || proofOfAddressUrl || criminalRecordUrl;
+    const hasNewDocs = false;
 
     const updated = {
       ...driver,
