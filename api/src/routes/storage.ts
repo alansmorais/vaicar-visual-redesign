@@ -40,9 +40,7 @@ storageRouter.post('/upload', authenticate, async (req: Request, res: Response, 
       throw new AppError(ErrorCode.VALIDATION_ERROR, validation.error || 'Arquivo inválido. Envie imagem (JPG, PNG, WebP) ou documento PDF.', 400);
     }
 
-    const ext = validation.mimeType === 'application/pdf'
-      ? 'pdf'
-      : validation.mimeType === 'image/jpeg'
+    const ext = validation.mimeType === 'image/jpeg'
       ? 'jpg'
       : validation.mimeType === 'image/png'
       ? 'png'
