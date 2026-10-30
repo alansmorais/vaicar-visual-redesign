@@ -1730,6 +1730,7 @@ ridesRouter.post('/:id/driver-location', async (req: Request, res: Response, nex
 
     broadcastLiveEvent('DRIVER_LOCATION_UPDATED', {
       rideId: ride.id,
+      passengerId: ride.passengerId,
       driverId,
       driverLocation: driverLoc,
     });
