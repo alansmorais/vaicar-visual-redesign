@@ -22,6 +22,7 @@ import {
   isDriverGpsFresh,
   processReferralRewardOnCompletion,
   createRideAtomic,
+  claimRideForDriver,
   debitReferralCreditForRide,
   refundReferralCreditForRide,
   listOffersForRide,
@@ -783,21 +784,13 @@ ridesRouter.post('/:id/accept', async (req: Request, res: Response, next: NextFu
     const ride = await getRide(String(req.params.id));
     if (!ride) throw new AppError(ErrorCode.NOT_FOUND, 'Corrida não encontrada.', 404);
 
-    if (!['REQUESTED', 'OFFERED'].includes(ride.status)) {
+    if (!['REQUESTED', 'OFFERED'].includes(ride.status) || ride.driverId) {
       throw new AppError(ErrorCode.INVALID_RIDE_STATE, `Esta corrida não está mais disponível (status: ${ride.status}).`, 409);
     }
 
     const now = new Date().toISOString();
-    if (ride.currentOfferId) {
-      const offer = await getRideOffer(ride.currentOfferId);
-      if (offer && offer.status === 'PENDING') {
-        await saveRideOffer({ ...offer, status: 'ACCEPTED', respondedAt: now });
-      }
-    }
     const pixInfo = getDriverPixInfo(driver);
-    const updatedRide: Ride = {
-      ...ride,
-      driverId: driver.uid,
+    const updatedRide = await claimRideForDriver(ride.id, driver.uid, {
       driverName: driver.name,
       driverPhone: driver.whatsapp,
       driverPhotoUrl: driver.photoUrl,
@@ -805,14 +798,15 @@ ridesRouter.post('/:id/accept', async (req: Request, res: Response, next: NextFu
       driverPixKey: pixInfo.pixKey,
       driverPixName: pixInfo.pixName,
       driverPixKeyType: pixInfo.pixKeyType,
-      status: 'DRIVER_ARRIVING',
       acceptedAt: now,
-    };
+    }, now);
 
-    await saveRide(updatedRide);
+    if (!updatedRide) {
+      throw new AppError(ErrorCode.INVALID_RIDE_STATE, 'Esta corrida ou oferta já foi aceita ou não está disponível para este motorista.', 409);
+    }
 
     const payload = formatRidePayload(updatedRide);
-    broadcastLiveEvent('RIDE_UPDATED', payload);
+    broadcastLiveEvent('RIDE_UPDATED', payload, [updatedRide.passengerId, updatedRide.driverId].filter((id): id is string => Boolean(id)));
 
     res.json({
       success: true,
