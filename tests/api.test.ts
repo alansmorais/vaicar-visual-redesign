@@ -3652,6 +3652,16 @@ describe('VaiCar Platform - API Automated Tests', () => {
     });
   });
 
+
+  describe('Authenticated driver discovery', () => {
+    it('rejects public driver search because results include live driver location and vehicle details', async () => {
+      const res = await request(app)
+        .post('/api/v1/search/drivers')
+        .send({ originLat: -23.8055, originLng: -45.4011, destinationLat: -23.7842, destinationLng: -45.6175 });
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('Phase 4 — Production Hardening & Security Authorization Suite', () => {
     const secDriverUid = `sec-driver-${Date.now()}`;
     const secDriverEmail = `sec.driver.${Date.now()}@teste.vaicar.app`;
