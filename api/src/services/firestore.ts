@@ -689,7 +689,7 @@ export async function claimRideForDriver(
       let offerData: RideOffer | null = null;
       if (ride.currentOfferId) {
         const offerDocRef = db.collection('ride_offers').doc(ride.currentOfferId);
-        const offerSnap = await transaction.get(offerDocRef);
+        const [offerSnap] = await transaction.getAll(offerDocRef);
         if (!offerSnap.exists) return null;
         offerData = offerSnap.data() as RideOffer;
         acceptedOfferId = ride.currentOfferId;
