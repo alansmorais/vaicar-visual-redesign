@@ -1,13 +1,7 @@
-import { getFirebaseAdminStorage, getFirebaseAdminFirestore } from './firebaseAdmin.js';
 import fs from 'fs';
 import path from 'path';
 
-// Allowed MIME types: images and PDF documents
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-// Memory cache fallback for fast serving
-const memoryFiles = new Map<string, { dataBase64: string; mimeType: string }>();
 
 export interface StorageUploadResult {
   url: string;
@@ -17,8 +11,8 @@ export interface StorageUploadResult {
 }
 
 /**
- * Validates file magic bytes to prevent disguised files or SVG scripts.
- * Supports JPEG, PNG, WebP, and PDF documents.
+ * Validates file magic bytes. This helper recognizes images and PDFs so callers
+ * can explicitly reject documents on public-profile endpoints.
  */
 export function validateImageBuffer(buffer: Buffer): { valid: boolean; mimeType?: string; error?: string } {
   if (buffer.length === 0) {
@@ -28,46 +22,43 @@ export function validateImageBuffer(buffer: Buffer): { valid: boolean; mimeType?
     return { valid: false, error: 'O tamanho do arquivo excede o limite máximo de 10MB.' };
   }
 
-  // Check magic bytes
-  // PDF: %PDF- (25 50 44 46)
-  if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
+  if (buffer.length >= 5 && buffer.toString('ascii', 0, 5) === '%PDF-') {
     return { valid: true, mimeType: 'application/pdf' };
   }
-
-  // JPEG: FF D8 (SOI marker)
-  if (buffer[0] === 0xff && buffer[1] === 0xd8) {
+  if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xd8) {
     return { valid: true, mimeType: 'image/jpeg' };
   }
-
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
   if (
+    buffer.length >= 8 &&
     buffer[0] === 0x89 &&
     buffer[1] === 0x50 &&
     buffer[2] === 0x4e &&
-    buffer[3] === 0x47
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
   ) {
     return { valid: true, mimeType: 'image/png' };
   }
-
-  // WebP: RIFF ... WEBP (52 49 46 46 .... 57 45 42 50)
   if (
+    buffer.length >= 12 &&
     buffer.toString('ascii', 0, 4) === 'RIFF' &&
     buffer.toString('ascii', 8, 12) === 'WEBP'
   ) {
     return { valid: true, mimeType: 'image/webp' };
   }
 
-  // Check if someone disguised SVG or HTML
   const headerStr = buffer.toString('utf-8', 0, Math.min(buffer.length, 100)).toLowerCase();
   if (headerStr.includes('<svg') || headerStr.includes('<?xml') || headerStr.includes('<html')) {
     return { valid: false, error: 'Arquivos SVG ou vetoriais não são permitidos por segurança.' };
   }
-
   return { valid: false, error: 'Formato não suportado. Utilize JPG, PNG, WebP ou PDF.' };
 }
 
 /**
- * Stores an image or PDF in Firebase Storage, Firestore fallback, and local disk
+ * Stores only non-sensitive profile images on local disk.
+ * Identity documents must use a separate private-storage implementation.
  */
 export async function storeImage(
   storagePath: string,
@@ -75,68 +66,27 @@ export async function storeImage(
   mimeType: string
 ): Promise<StorageUploadResult> {
   const normalizedPath = storagePath.replace(/\\/g, '/').replace(/^\/+/, '');
-  const dataBase64 = buffer.toString('base64');
-
-  // 1. Keep in memory store for instant access
-  memoryFiles.set(normalizedPath, { dataBase64, mimeType });
-
-  // 2. Persist in Firestore `stored_files` collection for reliable multi-instance persistence
-  const db = getFirebaseAdminFirestore();
-  if (db) {
-    try {
-      const docId = normalizedPath.replace(/[^a-zA-Z0-9_-]/g, '_');
-      await db.collection('stored_files').doc(docId).set({
-        storagePath: normalizedPath,
-        mimeType,
-        sizeBytes: buffer.length,
-        dataBase64,
-        createdAt: new Date().toISOString(),
-      }, { merge: true });
-    } catch (err) {
-      console.warn('[Storage] Firestore persistent save note:', err);
-    }
+  if (!/^(users|passengers|drivers)\/[A-Za-z0-9_-]+\/profile\.(jpg|png|webp)$/.test(normalizedPath)) {
+    throw new Error('Invalid public profile image storage path.');
+  }
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+    throw new Error('Only supported profile image MIME types may use public profile storage.');
+  }
+  const checked = validateImageBuffer(buffer);
+  if (!checked.valid || checked.mimeType !== mimeType) {
+    throw new Error('Profile image bytes do not match the validated MIME type.');
   }
 
-  // 3. Local filesystem write
-  const localDir = path.resolve(process.cwd(), 'public', 'uploads', path.dirname(normalizedPath));
-  if (!fs.existsSync(localDir)) {
-    fs.mkdirSync(localDir, { recursive: true });
+  const uploadRoot = path.resolve(process.cwd(), 'public', 'uploads');
+  const filePath = path.resolve(uploadRoot, normalizedPath);
+  if (!filePath.startsWith(uploadRoot + path.sep)) {
+    throw new Error('Invalid public profile image storage path.');
   }
-  const filePath = path.resolve(process.cwd(), 'public', 'uploads', normalizedPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, buffer);
 
-  // 4. Try remote Firebase/GCS bucket if configured
-  const adminStorage = getFirebaseAdminStorage();
-  if (adminStorage) {
-    try {
-      const bucket = adminStorage.bucket();
-      const file = bucket.file(normalizedPath);
-      await file.save(buffer, {
-        metadata: {
-          contentType: mimeType,
-          cacheControl: 'public, max-age=31536000',
-        },
-      });
-
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '03-01-2035',
-      });
-
-      return {
-        url,
-        storagePath: normalizedPath,
-        sizeBytes: buffer.length,
-        mimeType,
-      };
-    } catch {
-      // Remote bucket signedUrl or permission fallback - localUrl is reliable
-    }
-  }
-
-  const localUrl = `/uploads/${normalizedPath}`;
   return {
-    url: localUrl,
+    url: `/uploads/${normalizedPath}`,
     storagePath: normalizedPath,
     sizeBytes: buffer.length,
     mimeType,
@@ -144,54 +94,36 @@ export async function storeImage(
 }
 
 /**
- * Retrieves a stored file from disk, memory, or Firestore collection
+ * Reads only local, validated profile images. No Firestore or in-memory fallback:
+ * those stores may contain legacy files whose privacy classification is unknown.
  */
 export async function getStoredFile(storagePath: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
-  const cleanPath = storagePath.replace(/\\/g, '/').replace(/^\/+/, '');
-
-  // 1. Check local disk
-  const filePath = path.resolve(process.cwd(), 'public', 'uploads', cleanPath);
-  if (fs.existsSync(filePath)) {
-    const buffer = fs.readFileSync(filePath);
-    const mime = cleanPath.endsWith('.pdf')
-      ? 'application/pdf'
-      : cleanPath.endsWith('.png')
-      ? 'image/png'
-      : cleanPath.endsWith('.webp')
-      ? 'image/webp'
-      : 'image/jpeg';
-    return { buffer, mimeType: mime };
+  const normalizedPath = storagePath.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!/^(users|passengers|drivers)\/[A-Za-z0-9_-]+\/profile\.(jpg|png|webp)$/.test(normalizedPath)) {
+    return null;
   }
 
-  // 2. Check memory store
-  const mem = memoryFiles.get(cleanPath);
-  if (mem) {
-    return { buffer: Buffer.from(mem.dataBase64, 'base64'), mimeType: mem.mimeType };
+  const uploadRoot = path.resolve(process.cwd(), 'public', 'uploads');
+  const filePath = path.resolve(uploadRoot, normalizedPath);
+  if (!filePath.startsWith(uploadRoot + path.sep) || !fs.existsSync(filePath)) {
+    return null;
   }
 
-  // 3. Check Firestore `stored_files` collection
-  const db = getFirebaseAdminFirestore();
-  if (db) {
-    try {
-      const docId = cleanPath.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const docSnap = await db.collection('stored_files').doc(docId).get();
-      if (docSnap.exists) {
-        const data = docSnap.data() as { dataBase64: string; mimeType: string };
-        if (data && data.dataBase64) {
-          const buffer = Buffer.from(data.dataBase64, 'base64');
-          // Cache to local disk for subsequent reads
-          try {
-            const dir = path.dirname(filePath);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(filePath, buffer);
-          } catch {}
-          return { buffer, mimeType: data.mimeType || 'image/jpeg' };
-        }
-      }
-    } catch (err) {
-      console.warn('[Storage] Firestore file retrieval error:', err);
-    }
+  const buffer = fs.readFileSync(filePath);
+  const checked = validateImageBuffer(buffer);
+  if (!checked.valid || !checked.mimeType || checked.mimeType === 'application/pdf') {
+    return null;
   }
 
-  return null;
+  const extensionMime: Record<string, string> = {
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+  };
+  const expectedMime = extensionMime[path.extname(filePath).slice(1).toLowerCase()];
+  if (!expectedMime || checked.mimeType !== expectedMime) {
+    return null;
+  }
+
+  return { buffer, mimeType: checked.mimeType };
 }

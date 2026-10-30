@@ -60,14 +60,21 @@ export function broadcastLiveEvent(eventType: string, data: any, targetUserId?: 
   });
 
   const message = `event: ${eventType}\ndata: ${payload}\n\n`;
+  // Ride events are private by default. Derive recipients from the ride payload
+  // unless the caller supplies an explicit recipient list. Never broadcast globally.
+  const inferredRecipients = [data?.passengerId, data?.driverId].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0
+  );
   const targets = Array.isArray(targetUserId)
     ? targetUserId.filter(Boolean)
     : targetUserId
-    ? [targetUserId]
-    : null;
+      ? [targetUserId]
+      : inferredRecipients;
+
+  if (targets.length === 0) return;
 
   for (const [id, client] of clients.entries()) {
-    if (!targets || (client.userId && targets.includes(client.userId))) {
+    if (client.userId && targets.includes(client.userId)) {
       try {
         client.res.write(message);
       } catch (err) {

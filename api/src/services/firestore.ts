@@ -666,6 +666,68 @@ export async function getRide(rideId: string): Promise<Ride | null> {
   return localStore.rides.get(rideId) || null;
 }
 
+// Atomically claims a ride for one approved driver. Firestore transactions prevent
+// two API instances from assigning the same ride; the mutex serializes memory-mode tests.
+let rideClaimMutex: Promise<void> = Promise.resolve();
+
+export async function claimRideForDriver(
+  rideId: string,
+  driverId: string,
+  updates: Partial<Ride>,
+  nowIso: string
+): Promise<Ride | null> {
+  const db = getFirebaseAdminFirestore();
+  if (db) {
+    return db.runTransaction(async (transaction) => {
+      const rideRef = db.collection('rides').doc(rideId);
+      const rideSnap = await transaction.get(rideRef);
+      if (!rideSnap.exists) return null;
+      const ride = rideSnap.data() as Ride;
+      if (!['REQUESTED', 'OFFERED'].includes(ride.status) || (ride.driverId && ride.driverId !== driverId)) return null;
+
+      let acceptedOfferId: string | null = null;
+      let offerData: RideOffer | null = null;
+      if (ride.currentOfferId) {
+        const offerDocRef = db.collection('ride_offers').doc(ride.currentOfferId);
+        const [offerSnap] = await transaction.getAll(offerDocRef);
+        if (!offerSnap.exists) return null;
+        offerData = offerSnap.data() as RideOffer;
+        acceptedOfferId = ride.currentOfferId;
+        if (offerData.driverId !== driverId || offerData.status !== 'PENDING' ||
+            new Date(offerData.expiresAt).getTime() <= new Date(nowIso).getTime()) return null;
+      }
+
+      const updatedRide = { ...ride, ...updates, id: ride.id, driverId, status: 'DRIVER_ARRIVING' as const };
+      transaction.set(rideRef, sanitizeFirestoreData(updatedRide));
+      if (acceptedOfferId && offerData) {
+        const acceptedOfferRef = db.collection('ride_offers').doc(acceptedOfferId);
+        transaction.set(acceptedOfferRef, sanitizeFirestoreData({ ...offerData, status: 'ACCEPTED', respondedAt: nowIso }));
+      }
+      return updatedRide;
+    });
+  }
+
+  let release!: () => void;
+  const previous = rideClaimMutex;
+  rideClaimMutex = new Promise<void>((resolve) => { release = resolve; });
+  await previous;
+  try {
+    const ride = localStore.rides.get(rideId) as Ride | undefined;
+    if (!ride || !['REQUESTED', 'OFFERED'].includes(ride.status) || (ride.driverId && ride.driverId !== driverId)) return null;
+    if (ride.currentOfferId) {
+      const offer = localStore.rideOffers.get(ride.currentOfferId) as RideOffer | undefined;
+      if (!offer || offer.driverId !== driverId || offer.status !== 'PENDING' ||
+          new Date(offer.expiresAt).getTime() <= new Date(nowIso).getTime()) return null;
+      localStore.rideOffers.set(offer.id, sanitizeFirestoreData({ ...offer, status: 'ACCEPTED', respondedAt: nowIso }) as any);
+    }
+    const updatedRide = sanitizeFirestoreData({ ...ride, ...updates, id: ride.id, driverId, status: 'DRIVER_ARRIVING' }) as Ride;
+    localStore.rides.set(rideId, updatedRide);
+    return updatedRide;
+  } finally {
+    release();
+  }
+}
+
 export async function saveRide(ride: Ride): Promise<void> {
   const clean = sanitizeFirestoreData(ride);
   const db = getFirebaseAdminFirestore();

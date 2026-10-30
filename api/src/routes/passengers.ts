@@ -29,6 +29,19 @@ import { isValidWhatsApp, isValidPhotoData } from '../../../shared/src/validatio
 
 export const passengersRouter = Router();
 
+/** Keep legacy sensitive identity-document URLs out of passenger-facing responses. */
+function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'idDocumentUrl' | 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
+  const {
+    idDocumentUrl: _idDocumentUrl,
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 /**
  * POST /api/v1/passengers/auth
  * Server-authoritative passenger authentication endpoint.
@@ -144,7 +157,7 @@ passengersRouter.post('/auth', async (req: Request, res: Response, next: NextFun
         success: true,
         requestId: req.id,
         token,
-        passenger: activePassenger,
+        passenger: withoutSensitiveDocumentUrls(activePassenger),
         message: 'Passageiro autenticado com sucesso no VaiCar.',
       });
     }
@@ -179,7 +192,7 @@ passengersRouter.post('/auth', async (req: Request, res: Response, next: NextFun
         success: true,
         requestId: req.id,
         token,
-        passenger: activePassenger,
+        passenger: withoutSensitiveDocumentUrls(activePassenger),
         message: 'Passageiro autenticado com sucesso via PIN.',
       });
     }
@@ -228,7 +241,7 @@ passengersRouter.get('/me', async (req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       requestId: req.id,
-      data: profile,
+      data: profile ? withoutSensitiveDocumentUrls(profile) : profile,
     });
   } catch (error) {
     next(error);
@@ -273,7 +286,7 @@ passengersRouter.patch('/me', async (req: Request, res: Response, next: NextFunc
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);

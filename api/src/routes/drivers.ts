@@ -42,6 +42,19 @@ import { formatRidePayload, approveRidePaymentHandler } from './rides.js';
 
 export const driversRouter = Router();
 
+/** Prevent legacy sensitive document URLs from being re-exposed by self-service profile APIs. */
+function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'idDocumentUrl' | 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
+  const {
+    idDocumentUrl: _idDocumentUrl,
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 /**
  * Public route for passengers to view online approved drivers on map
  */
@@ -205,7 +218,7 @@ driversRouter.post('/auth', async (req: Request, res: Response, next: NextFuncti
         success: true,
         requestId: req.id,
         token,
-        driver: activeDriver,
+        driver: withoutSensitiveDocumentUrls(activeDriver),
         message: 'Motorista autenticado com sucesso no VaiCar Cockpit.',
       });
     }
@@ -238,7 +251,7 @@ driversRouter.post('/auth', async (req: Request, res: Response, next: NextFuncti
         success: true,
         requestId: req.id,
         token,
-        driver: activeDriver,
+        driver: withoutSensitiveDocumentUrls(activeDriver),
         message: 'PIN verificado com sucesso.',
       });
     }
@@ -285,7 +298,7 @@ driversRouter.get('/me', async (req: Request, res: Response, next: NextFunction)
     res.json({
       success: true,
       requestId: req.id,
-      data: driver,
+      data: withoutSensitiveDocumentUrls(driver),
     });
   } catch (error) {
     next(error);
@@ -537,8 +550,18 @@ driversRouter.patch('/me', async (req: Request, res: Response, next: NextFunctio
       customDeliveryPricing,
     } = req.body;
 
+    // Sensitive documents must use the private storage flow, not caller-supplied URLs.
+    const sensitiveDocumentFields = [cnhUrl, crlvUrl, proofOfAddressUrl, criminalRecordUrl];
+    if (sensitiveDocumentFields.some((value) => value !== undefined && value !== null && String(value).trim() !== '')) {
+      throw new AppError(
+        ErrorCode.VALIDATION_ERROR,
+        'O envio de documentos está temporariamente desativado até a ativação do armazenamento privado seguro.',
+        400,
+      );
+    }
+
     const now = new Date().toISOString();
-    const hasNewDocs = cnhUrl || crlvUrl || proofOfAddressUrl || criminalRecordUrl;
+    const hasNewDocs = false;
 
     const updated = {
       ...driver,
@@ -591,7 +614,7 @@ driversRouter.patch('/me', async (req: Request, res: Response, next: NextFunctio
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -676,7 +699,7 @@ driversRouter.post('/change-plan', async (req: Request, res: Response, next: Nex
       success: true,
       requestId: req.id,
       data: {
-        driver: updated,
+        driver: withoutSensitiveDocumentUrls(updated),
         message: `Plano alterado com sucesso para ${
           plan === 'weekly_percent_10'
             ? '10% Semanal (Acerto Semanal)'

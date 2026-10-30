@@ -39,24 +39,23 @@ app.use(requestIdMiddleware);
 
 import { getStoredFile } from './services/storage.js';
 
-// Serve uploaded files statically
-const publicUploads = path.resolve(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(publicUploads)) {
-  fs.mkdirSync(publicUploads, { recursive: true });
-}
-app.use('/uploads', express.static(publicUploads));
-
-// Fallback for multi-instance Cloud Run: retrieve from Firestore stored_files
+// Public uploads are restricted to profile-image-shaped paths only.
+// Never serve PDFs, arbitrary filenames, or identity-document paths from this endpoint.
 app.get('/uploads/*', async (req, res, next) => {
   try {
     const relPath = req.path.replace(/^\/uploads\/?/, '');
-    const stored = await getStoredFile(relPath);
-    if (stored) {
-      res.setHeader('Content-Type', stored.mimeType);
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-      return res.send(stored.buffer);
+    const publicProfileImage = /^(users|passengers|drivers)\/[A-Za-z0-9_-]+\/profile\.(?:jpg|png|webp)$/i;
+    if (!publicProfileImage.test(relPath)) {
+      return res.status(404).send('Arquivo não encontrado');
     }
-    return res.status(404).send('Arquivo não encontrado');
+    const stored = await getStoredFile(relPath);
+    if (!stored || !['image/jpeg', 'image/png', 'image/webp'].includes(stored.mimeType)) {
+      return res.status(404).send('Arquivo não encontrado');
+    }
+    res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.send(stored.buffer);
   } catch (err) {
     next(err);
   }

@@ -13,6 +13,7 @@ Apps Script/Sheets may store passenger and driver registration/profile records o
 - [ ] Review the current Code.gs from branch redesign/preview; do not paste secrets into GitHub or the spreadsheet.
 - [ ] In Apps Script Project Settings > Script properties, set VAICAR_SHARED_SECRET to a long random value. Keep it private.
 - [ ] Deploy a new TEST Web App version only after review. The current endpoint supports only authenticated driver.health and rejects all write actions.
+- [ ] Review `PRIVATE_DOCUMENT_STORAGE_DESIGN.md` before implementing any private document actions.
 - [ ] Keep API feature flag VAICAR_DRIVER_SHEETS_ENABLED disabled. Do not add Apps Script variables to frontend/VITE settings.
 
 ## Expected health response
@@ -25,7 +26,7 @@ Requests without the correct secret should return success=false. Any action othe
 - Passenger registration writes.
 - Driver registration writes.
 - Identity-token verification and account ownership checks at the API boundary.
-- Private document upload handling.
+- Private document upload/download handling (design contract documented, implementation and end-to-end tests pending).
 - Duplicate checks, idempotency, and full audit logging for registration operations.
 - Admin authorization for approval/rejection.
 - Integration tests against a deployed TEST Web App.

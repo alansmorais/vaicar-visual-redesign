@@ -22,8 +22,9 @@ import {
   getActivePendingOfferForDriver,
   savePassengerProfile,
   savePendingPin,
+  saveReceipt,
 } from '../api/src/services/firestore.js';
-import { DriverProfile, Ride } from '../shared/src/types.js';
+import { DriverProfile, Ride, Receipt } from '../shared/src/types.js';
 
 describe('VaiCar Platform - API Automated Tests', () => {
   // Test authentication tokens for dev/test mode
@@ -50,10 +51,144 @@ describe('VaiCar Platform - API Automated Tests', () => {
     expect(res.body.requestId).toBeDefined();
   });
 
+  describe('Authenticated profile image uploads', () => {
+    it('does not publicly serve sensitive PDF document paths', async () => {
+      const res = await request(app).get('/uploads/drivers/sensitive-user/file.pdf');
+      expect(res.status).toBe(404);
+      expect(res.headers['content-type']).not.toContain('application/pdf');
+    });
+
+    it('does not serve legacy photo/file aliases from public uploads', async () => {
+      const photo = await request(app).get('/uploads/drivers/sensitive-user/photo.jpg');
+      const file = await request(app).get('/uploads/drivers/sensitive-user/file.jpg');
+      expect(photo.status).toBe(404);
+      expect(file.status).toBe(404);
+    });
+
+    it('does not serve profile files with mismatched or unsupported extensions', async () => {
+      const pdf = await request(app).get('/uploads/drivers/sensitive-user/profile.pdf');
+      const jpegAlias = await request(app).get('/uploads/drivers/sensitive-user/profile.jpeg');
+      expect(pdf.status).toBe(404);
+      expect(jpegAlias.status).toBe(404);
+    });
+
+    it('rejects profile image upload without authentication', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .send({ uid: 'some-user', fileData: 'data:image/png;base64,AAAA' });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects profile image upload when body UID differs from verified identity', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'different-user', fileData: 'data:image/png;base64,AAAA' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('rejects attempts to use the profile upload endpoint for sensitive document folders', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'verified-upload-owner', pathPrefix: 'drivers/cnh', fileData: 'data:image/png;base64,AAAA' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects malformed base64 instead of silently decoding ignored characters', async () => {
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'verified-upload-owner', fileData: 'data:image/png;base64,AAAA!!!' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('base64');
+    });
+
+    it('rejects a declared image MIME type that differs from the file signature', async () => {
+      // A valid 1x1 PNG signature/payload declared as JPEG must not be accepted.
+      const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/FZsAAAAASUVORK5CYII=';
+      const res = await request(app)
+        .post('/api/v1/storage/upload')
+        .set('Authorization', 'Bearer verified-upload-owner:registration-verified-upload-owner@identity.test')
+        .send({ uid: 'verified-upload-owner', fileData: `data:image/jpeg;base64,${pngBase64}` });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('Sensitive document URL safety gate', () => {
+    it('rejects public or arbitrary document URLs during passenger registration', async () => {
+      const uid = `private-doc-pass-${Date.now()}`;
+      const res = await request(app)
+        .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${uid}:private-doc-pass@identity.test`)
+        .send({
+          uid,
+          name: 'Passageiro Teste',
+          whatsapp: '+5512991234567',
+          email: `private-doc-pass-${Date.now()}@teste.vaicar.app`,
+          photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+          termsAccepted: true,
+          idDocumentUrl: 'https://example.com/public/id.pdf',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('armazenamento privado seguro');
+    });
+
+    it('rejects document URLs during driver registration until private storage is implemented', async () => {
+      const uid = `private-doc-driver-${Date.now()}`;
+      const res = await request(app)
+        .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${uid}:private-doc-driver@identity.test`)
+        .send({
+          uid,
+          name: 'Motorista Teste',
+          cpf: generateValidTestCpf(),
+          birthDate: '1990-01-01',
+          whatsapp: '+5512991234568',
+          email: `private-doc-driver-${Date.now()}@teste.vaicar.app`,
+          photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+          professionalCategory: 'Motorista Autônomo',
+          cnhNumber: '12345678901',
+          cnhUrl: 'https://example.com/public/cnh.pdf',
+          vehicle: { type: 'car', brand: 'Fiat', model: 'Argo', year: 2022, color: 'Preto', plate: 'ABC1D23' },
+          operatingZones: ['Centro & Porto Grande'],
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('armazenamento privado seguro');
+    });
+  });
+
   describe('Passenger Registration Validation', () => {
+    it('rejects passenger registration without an authentication token', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register-passenger')
+        .send({ uid: 'missing-auth-uid' });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects a client-supplied UID that differs from the authenticated identity', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register-passenger')
+        .set('Authorization', 'Bearer verified-owner:registration-verified-owner@identity.test')
+        .send({ uid: 'different-client-uid' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
     it('rejects registration with missing WhatsApp', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'p-invalid-phone'}:registration-${'p-invalid-phone'}@identity.test`)
         .send({
           uid: 'p-invalid-phone',
           name: 'João Silva',
@@ -71,6 +206,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects registration with fake local email', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'p-invalid-email'}:registration-${'p-invalid-email'}@identity.test`)
         .send({
           uid: 'p-invalid-email',
           name: 'João Silva',
@@ -87,6 +223,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects registration with missing photo', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'p-invalid-photo'}:registration-${'p-invalid-photo'}@identity.test`)
         .send({
           uid: 'p-invalid-photo',
           name: 'João Silva',
@@ -103,6 +240,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('successfully registers valid passenger and creates account', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-pass-01'}:registration-${'test-pass-01'}@identity.test`)
         .send({
           uid: 'test-pass-01',
           name: 'Maria Fernandes',
@@ -121,6 +259,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects duplicate registration with identical email', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-pass-dup'}:registration-${'test-pass-dup'}@identity.test`)
         .send({
           uid: 'test-pass-dup',
           name: 'Outra Maria',
@@ -136,9 +275,20 @@ describe('VaiCar Platform - API Automated Tests', () => {
   });
 
   describe('Driver Registration & Approval Flow', () => {
+    it('rejects driver registration when the submitted UID differs from the authenticated identity', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register-driver')
+        .set('Authorization', 'Bearer verified-driver:registration-verified-driver@identity.test')
+        .send({ uid: 'different-driver-uid' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
     it('rejects driver with invalid CPF', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'d-inv-cpf'}:registration-${'d-inv-cpf'}@identity.test`)
         .send({
           uid: 'd-inv-cpf',
           name: 'Carlos Oliveira',
@@ -160,6 +310,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('rejects driver under 18 years old', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'d-minor'}:registration-${'d-minor'}@identity.test`)
         .send({
           uid: 'd-minor',
           name: 'Jovem Oliveira',
@@ -181,6 +332,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('successfully registers valid driver in PENDING_APPROVAL status', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'test-driv-01'}:registration-${'test-driv-01'}@identity.test`)
         .send({
           uid: 'test-driv-01',
           name: 'Carlos Santos',
@@ -409,6 +561,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('accepts passenger registration with relative /uploads/ path', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-pass-relative-upload'}:registration-${'test-pass-relative-upload'}@identity.test`)
         .send({
           uid: 'test-pass-relative-upload',
           name: 'Renata Litoral',
@@ -431,6 +584,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('allows passenger registration with international phone format', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${'test-dual-user-pass'}:registration-${'test-dual-user-pass'}@identity.test`)
         .send({
           uid: 'test-dual-user-pass',
           name: 'Carlos Dual',
@@ -448,8 +602,9 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('allows the same user (same email & whatsapp) to also register as driver', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${'test-dual-user-pass'}:registration-${'test-dual-user-pass'}@identity.test`)
         .send({
-          uid: 'test-dual-user-driver',
+          uid: 'test-dual-user-pass',
           name: 'Carlos Dual',
           cpf: '11144477735',
           birthDate: '1990-08-12',
@@ -480,7 +635,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('returns both passenger and driver profiles in /auth/me for dual account', async () => {
       const res = await request(app)
         .get('/api/v1/auth/me')
-        .set('Authorization', `Bearer test-dual-user-driver:${dualUserEmail}`);
+        .set('Authorization', `Bearer test-dual-user-pass:${dualUserEmail}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.user.isDriver).toBe(true);
@@ -498,6 +653,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('registers a test passenger for non-payment testing', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${victimPassengerUid}:registration-${victimPassengerUid}@identity.test`)
         .send({
           uid: victimPassengerUid,
           name: 'Caloteiro Teste',
@@ -658,6 +814,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('registers a test driver with monthly_100 plan and plan dates', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${planDriverUid}:registration-${planDriverUid}@identity.test`)
         .send({
           uid: planDriverUid,
           name: 'Motorista Planos',
@@ -973,6 +1130,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     it('registers driver under origUid and approves via admin', async () => {
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${origUid}:registration-${origUid}@identity.test`)
         .send({
           uid: origUid,
           name: 'Renato Motorista Real',
@@ -1036,6 +1194,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // Register passenger
       const passRes = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passUid}:registration-${passUid}@identity.test`)
         .send({
           uid: passUid,
           name: 'Passageiro Comparador',
@@ -1049,6 +1208,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // Register driver
       const drvRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${driverUid}:registration-${driverUid}@identity.test`)
         .send({
           uid: driverUid,
           name: 'Carlos Motorista Empreendedor',
@@ -1408,6 +1568,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Register passenger
       const pRes = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${stage1PassUid}:registration-${stage1PassUid}@identity.test`)
         .send({
           uid: stage1PassUid,
           name: 'Cliente Entrega',
@@ -1421,6 +1582,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 2. Register motorcycle courier with monthly_100 plan
       const dRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage1CourierUid}:registration-${stage1CourierUid}@identity.test`)
         .send({
           uid: stage1CourierUid,
           name: 'Entregador Moto',
@@ -1450,6 +1612,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 3. Register bicycle courier
       const bRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage1BikeUid}:registration-${stage1BikeUid}@identity.test`)
         .send({
           uid: stage1BikeUid,
           name: 'Ciclista Entregador',
@@ -1690,6 +1853,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Passenger registration
       const passRes = await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${stage2PassUid}:registration-${stage2PassUid}@identity.test`)
         .send({
           uid: stage2PassUid,
           name: 'Cliente Entrega VaiCar',
@@ -1703,6 +1867,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 2. Bicycle courier registration
       const bikeRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage2BikeUid}:registration-${stage2BikeUid}@identity.test`)
         .send({
           uid: stage2BikeUid,
           name: 'Entregador Ciclista Stg2',
@@ -1860,6 +2025,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       stage3PassToken = `${stage3PassUid}:${stage3PassEmail}`;
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${stage3PassUid}:registration-${stage3PassUid}@identity.test`)
         .send({
           uid: stage3PassUid,
           name: 'Cliente Etapa 3',
@@ -1877,6 +2043,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       stage3CarDriverToken = `${stage3CarDriverUid}:${stage3CarDriverEmail}`;
       const carReg = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage3CarDriverUid}:registration-${stage3CarDriverUid}@identity.test`)
         .send({
           uid: stage3CarDriverUid,
           name: 'Motorista Multi-Serviço',
@@ -1887,7 +2054,6 @@ describe('VaiCar Platform - API Automated Tests', () => {
           photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
           professionalCategory: 'Motorista Autônomo e Entregador',
           cnhNumber: '12345678901',
-          criminalRecordUrl: 'https://storage.vaicar.app/drivers/records.pdf',
           subscriptionPlan: 'monthly_100',
           servicesOffered: ['ride', 'delivery'],
           vehicle: {
@@ -1909,6 +2075,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       stage3BikeDriverToken = `${stage3BikeDriverUid}:${stage3BikeDriverEmail}`;
       const bikeReg = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${stage3BikeDriverUid}:registration-${stage3BikeDriverUid}@identity.test`)
         .send({
           uid: stage3BikeDriverUid,
           name: 'Ciclista Entregador',
@@ -1919,7 +2086,6 @@ describe('VaiCar Platform - API Automated Tests', () => {
           photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
           professionalCategory: 'Entregador / Ciclista',
           cnhNumber: 'ISENTO_BIKE',
-          criminalRecordUrl: 'https://storage.vaicar.app/drivers/records.pdf',
           subscriptionPlan: 'monthly_100',
           servicesOffered: ['ride', 'delivery'], // should be locked down to ['delivery']
           vehicle: {
@@ -2294,6 +2460,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${p100DriverUid}:registration-${p100DriverUid}@identity.test`)
         .send({
           uid: p100DriverUid,
           name: 'Motorista Plano 100',
@@ -2336,13 +2503,15 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
   describe('Phase 3 - Cryptographic Authentication & Account Migration Security', () => {
     const testMigEmail = `driver.mig.${Date.now()}@teste.vaicar.app`;
+    const testMigRequestedUid = `old-driver-${Date.now()}`;
     let testMigDriverUid = '';
 
     beforeAll(async () => {
       const regRes = await request(app)
         .post('/api/v1/auth/register-driver')
+        .set('Authorization', `Bearer ${testMigRequestedUid}:registration-${testMigRequestedUid}@identity.test`)
         .send({
-          uid: `old-driver-${Date.now()}`,
+          uid: testMigRequestedUid,
           name: 'Motorista Legado',
           cpf: generateValidTestCpf(),
           birthDate: '1988-04-12',
@@ -2552,6 +2721,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       const pUid = `pass-uni-${Date.now()}`;
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${pUid}:registration-${pUid}@identity.test`)
         .send({
           uid: pUid,
           name: 'Passageiro Unificado',
@@ -2758,6 +2928,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Create Passengers
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passengerUid}:registration-${passengerUid}@identity.test`)
         .send({
           uid: passengerUid,
           name: 'Passageiro Dispatch Test',
@@ -2769,6 +2940,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passenger2Uid}:registration-${passenger2Uid}@identity.test`)
         .send({
           uid: passenger2Uid,
           name: 'Passageiro Dispatch Test 2',
@@ -2780,6 +2952,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       await request(app)
         .post('/api/v1/auth/register-passenger')
+        .set('Authorization', `Bearer ${passenger3Uid}:registration-${passenger3Uid}@identity.test`)
         .send({
           uid: passenger3Uid,
           name: 'Passageiro Dispatch Test 3',
@@ -3363,6 +3536,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Search when drivers are offline: returns totalFound = 0, results = [], standardFare > 0
       const resEmpty = await request(app)
         .post('/api/v1/search/drivers')
+        .set('Authorization', `Bearer ${passengerToken}`)
         .send({
           pickupLat: -23.7928,
           pickupLng: -45.3999,
@@ -3406,6 +3580,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       const resBrunoOnly = await request(app)
         .post('/api/v1/search/drivers')
+        .set('Authorization', `Bearer ${passengerToken}`)
         .send({
           pickupLat: -23.7928,
           pickupLng: -45.3999,
@@ -3446,6 +3621,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       const resBoth = await request(app)
         .post('/api/v1/search/drivers')
+        .set('Authorization', `Bearer ${passengerToken}`)
         .send({
           pickupLat: -23.7928,
           pickupLng: -45.3999,
@@ -3480,6 +3656,23 @@ describe('VaiCar Platform - API Automated Tests', () => {
     });
   });
 
+
+  describe('Live stream access control', () => {
+    it('rejects anonymous SSE connections', async () => {
+      const res = await request(app).get('/api/v1/live/stream');
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('Authenticated driver discovery', () => {
+    it('rejects public driver search because results include live driver location and vehicle details', async () => {
+      const res = await request(app)
+        .post('/api/v1/search/drivers')
+        .send({ originLat: -23.8055, originLng: -45.4011, destinationLat: -23.7842, destinationLng: -45.6175 });
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('Phase 4 — Production Hardening & Security Authorization Suite', () => {
     const secDriverUid = `sec-driver-${Date.now()}`;
     const secDriverEmail = `sec.driver.${Date.now()}@teste.vaicar.app`;
@@ -3494,6 +3687,11 @@ describe('VaiCar Platform - API Automated Tests', () => {
     const attackerToken = `${attackerUid}:${attackerEmail}`;
 
     let secRideId: string;
+    const secReceiptId = `receipt-sec-${Date.now()}`;
+    const secClaimRideId = `ride-claim-sec-${Date.now()}`;
+    const secSecondDriverUid = `sec-driver-two-${Date.now()}`;
+    const secSecondDriverEmail = `sec.driver.two.${Date.now()}@teste.vaicar.app`;
+    const secSecondDriverToken = `${secSecondDriverUid}:${secSecondDriverEmail}`;
 
     beforeAll(async () => {
       // 1. Create Driver
@@ -3505,6 +3703,15 @@ describe('VaiCar Platform - API Automated Tests', () => {
         status: 'APPROVED',
         isOnline: true,
         currentLocation: { lat: -23.8055, lng: -45.4011, updatedAt: new Date().toISOString() },
+        servicesOffered: ['ride'],
+      } as any);
+
+      await saveDriverProfile({
+        uid: secSecondDriverUid,
+        name: 'Segundo Motorista Segurança',
+        email: secSecondDriverEmail,
+        status: 'APPROVED',
+        isOnline: true,
         servicesOffered: ['ride'],
       } as any);
 
@@ -3527,6 +3734,22 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 4. Create Ride
       secRideId = `ride-sec-${Date.now()}`;
       await saveRide({
+        id: secClaimRideId,
+        serviceType: 'ride',
+        passengerId: secPassengerUid,
+        passengerName: 'Passageiro Autorizado Segurança',
+        origin: { address: 'Centro, São Sebastião', lat: -23.8055, lng: -45.4011 },
+        destination: { address: 'Boiçucanga, São Sebastião', lat: -23.7842, lng: -45.6175 },
+        distanceKm: 12,
+        durationMinutes: 25,
+        fareAmount: 28.25,
+        paymentMethod: 'PIX',
+        paymentStatus: 'PENDING',
+        status: 'REQUESTED',
+        requestedAt: new Date().toISOString(),
+      } as any);
+
+      await saveRide({
         id: secRideId,
         serviceType: 'ride',
         passengerId: secPassengerUid,
@@ -3543,6 +3766,73 @@ describe('VaiCar Platform - API Automated Tests', () => {
         status: 'IN_PROGRESS',
         requestedAt: new Date().toISOString(),
       } as any);
+
+      await saveReceipt({
+        id: secReceiptId,
+        rideId: secRideId,
+        receiptNumber: 'SEC-TEST-001',
+        passengerName: '<script>alert(1)</script>',
+        passengerEmail: secPassengerEmail,
+        passengerPhone: '+5512999990000',
+        driverName: 'Motorista Autorizado Segurança',
+        vehicleDescription: 'Fiat Argo',
+        vehiclePlate: 'ABC1D23',
+        dateTime: new Date().toISOString(),
+        originAddress: 'Centro',
+        destinationAddress: 'Boiçucanga',
+        distanceKm: 12,
+        durationMinutes: 25,
+        fareAmount: 28.25,
+        paymentMethod: 'PIX',
+        paymentStatus: 'PENDING',
+        generatedAt: new Date().toISOString(),
+      } as Receipt);
+    });
+
+    it('POST /api/v1/rides/:id/accept allows only one concurrent driver claim', async () => {
+      const [first, second] = await Promise.all([
+        request(app)
+          .post(`/api/v1/rides/${secClaimRideId}/accept`)
+          .set('Authorization', `Bearer ${secDriverToken}`),
+        request(app)
+          .post(`/api/v1/rides/${secClaimRideId}/accept`)
+          .set('Authorization', `Bearer ${secSecondDriverToken}`),
+      ]);
+      const statuses = [first.status, second.status].sort();
+      expect(statuses).toEqual([200, 409]);
+      const claimed = await getRide(secClaimRideId);
+      expect(claimed?.driverId).toBeDefined();
+      expect([secDriverUid, secSecondDriverUid]).toContain(claimed?.driverId);
+      expect(claimed?.status).toBe('DRIVER_ARRIVING');
+    });
+
+    it('GET /api/v1/receipts/:id rejects anonymous requests', async () => {
+      const res = await request(app).get(`/api/v1/receipts/${secReceiptId}`);
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/v1/receipts/:id denies users unrelated to the ride', async () => {
+      const res = await request(app)
+        .get(`/api/v1/receipts/${secReceiptId}`)
+        .set('Authorization', `Bearer ${attackerToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('GET /api/v1/receipts/:id allows the assigned passenger', async () => {
+      const res = await request(app)
+        .get(`/api/v1/receipts/${secReceiptId}`)
+        .set('Authorization', `Bearer ${secPassengerToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.receiptNumber).toBe('SEC-TEST-001');
+    });
+
+    it('GET /api/v1/receipts/:id/html escapes untrusted receipt values', async () => {
+      const res = await request(app)
+        .get(`/api/v1/receipts/${secReceiptId}/html`)
+        .set('Authorization', `Bearer ${secPassengerToken}`);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(res.text).not.toContain('<script>alert(1)</script>');
     });
 
     it('GET /api/v1/rides/:id/driver-location rejects unassigned attacker with 403 Forbidden', async () => {
@@ -3605,6 +3895,30 @@ describe('VaiCar Platform - API Automated Tests', () => {
       expect(res.status).toBe(401);
       expect(res.body.error.message).toContain('incorretos');
     });
+    
+    it('POST /rides/:id/decline rejects a user who is not the assigned driver', async () => {
+      const res = await request(app)
+        .post(`/api/v1/rides/${secRideId}/decline`)
+        .set('Authorization', `Bearer ${attackerToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('POST /rides/:id/status rejects non-admin generic status changes', async () => {
+      const res = await request(app)
+        .post(`/api/v1/rides/${secRideId}/status`)
+        .set('Authorization', `Bearer ${attackerToken}`)
+        .send({ status: 'COMPLETED' });
+      expect(res.status).toBe(403);
+    });
+
+    it('POST /rides/:id/rate-passenger rejects a driver who is not assigned to the ride', async () => {
+      const res = await request(app)
+        .post(`/api/v1/rides/${secRideId}/rate-passenger`)
+        .set('Authorization', `Bearer ${attackerToken}`)
+        .send({ rating: 5 });
+      expect(res.status).toBe(403);
+    });
+
   });
 });
 

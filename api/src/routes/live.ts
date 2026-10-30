@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { addLiveClient, removeLiveClient, broadcastLiveEvent, getLiveClientCount } from '../services/liveStream.js';
-import { verifyServerJwt } from '../services/jwt.js';
+import { authenticate, AuthenticatedUser } from '../middleware/auth.js';
 
 export const liveRouter = Router();
 
@@ -9,19 +9,9 @@ export const liveRouter = Router();
  * GET /api/v1/live/stream
  * Server-Sent Events (SSE) live event stream.
  */
-liveRouter.get('/stream', (req: Request, res: Response) => {
-  // Extract user info if token is provided via query or Authorization header
-  let userId: string | undefined = undefined;
-  const authHeader = req.headers.authorization;
-  const token = (typeof req.query.token === 'string' ? req.query.token : undefined) ||
-    (authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
-
-  if (token) {
-    const verified = verifyServerJwt(token);
-    if (verified && verified.uid) {
-      userId = verified.uid;
-    }
-  }
+liveRouter.get('/stream', authenticate, (req: Request, res: Response) => {
+  // authenticate verifies Firebase ID tokens or server JWTs; never accept anonymous streams.
+  const userId = (req.user as AuthenticatedUser).uid;
 
   // Set SSE HTTP response headers
   res.writeHead(200, {
@@ -29,7 +19,6 @@ liveRouter.get('/stream', (req: Request, res: Response) => {
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
     'X-Accel-Buffering': 'no',
-    'Access-Control-Allow-Origin': '*',
   });
 
   const clientId = `client-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;

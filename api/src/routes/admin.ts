@@ -38,6 +38,19 @@ import { listDeliveryWaitlist } from '../services/deliveryWaitlist.js';
 
 export const adminRouter = Router();
 
+/** Admin list endpoints should not expose legacy document URLs; private access will use an audited document endpoint. */
+function withoutSensitiveDocumentUrls<T extends Record<string, any>>(profile: T): Omit<T, 'idDocumentUrl' | 'cnhUrl' | 'crlvUrl' | 'proofOfAddressUrl' | 'criminalRecordUrl'> {
+  const {
+    idDocumentUrl: _idDocumentUrl,
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 // Enforce admin authentication
 adminRouter.use(authenticate, requireAdmin);
 
@@ -91,7 +104,7 @@ adminRouter.get('/drivers', async (req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       requestId: req.id,
-      data: drivers,
+      data: drivers.map((driver) => withoutSensitiveDocumentUrls(driver)),
     });
   } catch (error) {
     next(error);
@@ -152,7 +165,7 @@ adminRouter.post('/drivers/:id/approve', async (req: Request, res: Response, nex
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -203,7 +216,7 @@ adminRouter.post('/drivers/:id/reject', async (req: Request, res: Response, next
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -254,7 +267,7 @@ adminRouter.post('/drivers/:id/suspend', async (req: Request, res: Response, nex
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -289,7 +302,7 @@ adminRouter.post('/drivers/:id/request-docs', async (req: Request, res: Response
       success: true,
       requestId: req.id,
       message: 'Solicitação de documentos enviada por e-mail com sucesso.',
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);
@@ -338,7 +351,7 @@ adminRouter.get('/passengers', async (req: Request, res: Response, next: NextFun
     res.json({
       success: true,
       requestId: req.id,
-      data: passengers,
+      data: passengers.map((passenger) => withoutSensitiveDocumentUrls(passenger)),
     });
   } catch (error) {
     next(error);
@@ -365,7 +378,7 @@ adminRouter.post('/passengers/:id/block', async (req: Request, res: Response, ne
     res.json({
       success: true,
       requestId: req.id,
-      data: updated,
+      data: withoutSensitiveDocumentUrls(updated),
     });
   } catch (error) {
     next(error);

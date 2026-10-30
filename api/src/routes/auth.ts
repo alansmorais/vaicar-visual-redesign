@@ -41,7 +41,37 @@ import {
   sendDriverPinEmail,
   sendPasswordResetEmail,
 } from '../services/email.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, type AuthenticatedUser } from '../middleware/auth.js';
+
+/** Reads the verified token UID without relying on Express's narrower req.user declaration. */
+function getAuthUid(req: Request): string | undefined {
+  return (req.user as AuthenticatedUser | undefined)?.authUid;
+}
+
+/**
+ * Sensitive document URLs are disabled until the private Drive flow is implemented.
+ * Accepting arbitrary URLs here could persist public or attacker-controlled links.
+ */
+function rejectLegacySensitiveDocumentUrls(req: Request): void {
+  const fields = [
+    'idDocumentUrl',
+    'criminalRecordUrl',
+    'cnhUrl',
+    'crlvUrl',
+    'proofOfAddressUrl',
+  ];
+  const supplied = fields.filter((field) => {
+    const value = req.body?.[field];
+    return value !== undefined && value !== null && String(value).trim() !== '';
+  });
+  if (supplied.length) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'O envio de documentos está temporariamente desativado até a ativação do armazenamento privado seguro.',
+      400,
+    );
+  }
+}
 import { getFirebaseAdminAuth } from '../services/firebaseAdmin.js';
 import { signServerJwt } from '../services/jwt.js';
 import { config } from '../config/index.js';
@@ -49,11 +79,25 @@ import { UserProfile, PassengerProfile, DriverProfile, ReferralRecord } from '..
 
 export const authRouter = Router();
 
+/** Keep legacy sensitive document URLs out of client-facing profile responses. */
+function withoutSensitiveDocumentUrls(profile: any): any {
+  if (!profile || typeof profile !== 'object') return profile;
+  const {
+    idDocumentUrl: _idDocumentUrl,
+    cnhUrl: _cnhUrl,
+    crlvUrl: _crlvUrl,
+    proofOfAddressUrl: _proofOfAddressUrl,
+    criminalRecordUrl: _criminalRecordUrl,
+    ...safeProfile
+  } = profile;
+  return safeProfile;
+}
+
 /**
  * Passenger Registration
  * Required: name, whatsapp, email, photoUrl, termsAccepted
  */
-authRouter.post('/register-passenger', async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/register-passenger', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       uid,
@@ -68,8 +112,13 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
       referralCode,
     } = req.body;
 
+    rejectLegacySensitiveDocumentUrls(req);
+
     if (!uid || typeof uid !== 'string') {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Identificador de usuário (uid) obrigatório.', 400);
+    }
+    if (!getAuthUid(req) || uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.FORBIDDEN, 'O UID informado não corresponde à identidade autenticada.', 403);
     }
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Nome completo é obrigatório.', 400);
@@ -91,6 +140,13 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
     const existingByEmail = await findUserByEmail(email);
     const existingByPhone = await findUserByWhatsApp(whatsapp);
 
+    if (existingByEmail && existingByEmail.uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este e-mail já está vinculado a outra identidade.', 409);
+    }
+    if (existingByPhone && existingByPhone.uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este WhatsApp já está vinculado a outra identidade.', 409);
+    }
+
     // If an account with this email already exists with a passenger profile belonging to a different user, reject
     if (existingByEmail) {
       const existingPassenger = await getPassengerProfile(existingByEmail.uid);
@@ -106,7 +162,7 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
       }
     }
 
-    const effectiveUid = existingByEmail ? existingByEmail.uid : existingByPhone ? existingByPhone.uid : uid;
+    const effectiveUid = getAuthUid(req)!;
     const now = new Date().toISOString();
     const hasRecordCheck = Boolean(hasCriminalRecordCheck || criminalRecordUrl);
     const normalizedPhone = normalizeInternationalPhone(whatsapp);
@@ -231,7 +287,7 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
       requestId: req.id,
       data: {
         user: userProfile,
-        passenger: passengerProfile,
+        passenger: withoutSensitiveDocumentUrls(passengerProfile),
         emailStatus,
       },
     });
@@ -244,7 +300,7 @@ authRouter.post('/register-passenger', async (req: Request, res: Response, next:
  * Driver Registration
  * Required: name, cpf, birthDate, whatsapp, email, photoUrl, professionalCategory, cnhNumber, vehicle, operatingZones
  */
-authRouter.post('/register-driver', async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/register-driver', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       uid,
@@ -265,7 +321,12 @@ authRouter.post('/register-driver', async (req: Request, res: Response, next: Ne
       operatingZones,
     } = req.body;
 
-    if (!uid) throw new AppError(ErrorCode.VALIDATION_ERROR, 'UID é obrigatório.', 400);
+    rejectLegacySensitiveDocumentUrls(req);
+
+    if (!uid || typeof uid !== 'string') throw new AppError(ErrorCode.VALIDATION_ERROR, 'UID é obrigatório.', 400);
+    if (!getAuthUid(req) || uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.FORBIDDEN, 'O UID informado não corresponde à identidade autenticada.', 403);
+    }
     if (!name || name.trim().length < 3) {
       throw new AppError(ErrorCode.VALIDATION_ERROR, 'Nome completo é obrigatório.', 400);
     }
@@ -311,12 +372,22 @@ authRouter.post('/register-driver', async (req: Request, res: Response, next: Ne
     const dupPhone = await findUserByWhatsApp(whatsapp);
     const dupCpf = await findDriverByCpf(cpf);
 
+    if (dupEmail && dupEmail.uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este e-mail já está vinculado a outra identidade.', 409);
+    }
+    if (dupPhone && dupPhone.uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este WhatsApp já está vinculado a outra identidade.', 409);
+    }
+    if (dupCpf && dupCpf.uid !== getAuthUid(req)) {
+      throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Este CPF já está vinculado a outra identidade.', 409);
+    }
+
     // If CPF belongs to a completely different user account with different email and phone, reject
     if (dupCpf && (!dupEmail || dupCpf.uid !== dupEmail.uid) && (!dupPhone || dupCpf.uid !== dupPhone.uid) && dupCpf.uid !== uid) {
       throw new AppError(ErrorCode.DUPLICATE_ACCOUNT, 'Já existe cadastro com este CPF em outra conta.', 409);
     }
 
-    const effectiveUid = dupEmail ? dupEmail.uid : dupPhone ? dupPhone.uid : dupCpf ? dupCpf.uid : uid;
+    const effectiveUid = getAuthUid(req)!;
     const now = new Date().toISOString();
     const normalizedPhone = normalizeInternationalPhone(whatsapp);
 
@@ -400,7 +471,7 @@ authRouter.post('/register-driver', async (req: Request, res: Response, next: Ne
       requestId: req.id,
       data: {
         user: userProfile,
-        driver: driverProfile,
+        driver: withoutSensitiveDocumentUrls(driverProfile),
         emailStatus,
       },
     });
@@ -938,10 +1009,10 @@ authRouter.get('/me', authenticate, async (req: Request, res: Response, next: Ne
       requestId: req.id,
       data: {
         user: userWithRoles,
-        passenger,
-        driver,
-        passengerProfile: passenger,
-        driverProfile: driver,
+        passenger: withoutSensitiveDocumentUrls(passenger),
+        driver: withoutSensitiveDocumentUrls(driver),
+        passengerProfile: withoutSensitiveDocumentUrls(passenger),
+        driverProfile: withoutSensitiveDocumentUrls(driver),
         isAdmin: req.user!.isAdmin || user?.isAdmin || false,
       },
     });
