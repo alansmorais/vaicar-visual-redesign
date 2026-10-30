@@ -1315,7 +1315,7 @@ ridesRouter.post('/:id/cancel', async (req: Request, res: Response, next: NextFu
 
     const payload = formatRidePayload(updatedRide);
     broadcastLiveEvent('RIDE_UPDATED', payload);
-    broadcastLiveEvent('RIDE_CANCELLED', { rideId: updatedRide.id, reason: formattedReason, cancelledBy });
+    broadcastLiveEvent('RIDE_CANCELLED', { rideId: updatedRide.id, passengerId: updatedRide.passengerId, driverId: updatedRide.driverId, reason: formattedReason, cancelledBy }, [updatedRide.passengerId, updatedRide.driverId].filter((id): id is string => Boolean(id)));
 
     res.json({
       success: true,
