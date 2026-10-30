@@ -11,7 +11,7 @@ export const liveRouter = Router();
  */
 liveRouter.get('/stream', authenticate, (req: Request, res: Response) => {
   // authenticate verifies Firebase ID tokens or server JWTs; never accept anonymous streams.
-  const userId = (req.user as AuthenticatedUser).authUid;
+  const userId = (req.user as AuthenticatedUser).uid;
 
   // Set SSE HTTP response headers
   res.writeHead(200, {
