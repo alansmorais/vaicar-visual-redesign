@@ -739,7 +739,14 @@ ridesRouter.post('/:id/decline', async (req: Request, res: Response, next: NextF
     const ride = await getRide(String(req.params.id));
     if (!ride) throw new AppError(ErrorCode.NOT_FOUND, 'Corrida não encontrada.', 404);
 
-    if (ride.status === 'REQUESTED') {
+    if (!req.user!.isAdmin && req.user!.role !== 'admin') {
+      const driver = await resolveDriverProfile(req.user!.uid, req.user!.email);
+      if (!driver || ride.driverId !== driver.uid) {
+        throw new AppError(ErrorCode.FORBIDDEN, 'Apenas o motorista atribuído pode recusar esta corrida.', 403);
+      }
+    }
+
+    if (ride.status === 'REQUESTED' || ride.status === 'OFFERED') {
       const updatedRide: Ride = {
         ...ride,
         driverId: undefined,
@@ -1391,6 +1398,12 @@ ridesRouter.get('/', async (req: Request, res: Response, next: NextFunction) => 
  */
 ridesRouter.all('/:id/status', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // This legacy catch-all endpoint can bypass the dedicated, state-checked
+    // transition routes. Keep it available only to administrators.
+    if (!req.user!.isAdmin && req.user!.role !== 'admin') {
+      throw new AppError(ErrorCode.FORBIDDEN, 'Use os endpoints específicos para as transições da corrida.', 403);
+    }
+
     const { status, cancellationReason } = req.body;
     const rideId = String(req.params.id);
     const ride = await getRide(rideId);
@@ -1790,8 +1803,12 @@ ridesRouter.post('/:id/rate-passenger', async (req: Request, res: Response, next
     if (!ride) throw new AppError(ErrorCode.NOT_FOUND, 'Corrida não encontrada.', 404);
 
     const driver = await resolveDriverProfile(req.user!.uid, req.user!.email);
-    if (!driver || (ride.driverId && ride.driverId !== driver.uid && ride.driverId !== req.user!.uid)) {
-      throw new AppError(ErrorCode.FORBIDDEN, 'Apenas o motorista parceiro pode avaliar o passageiro desta corrida.', 403);
+    const isAdmin = Boolean(req.user!.isAdmin || req.user!.role === 'admin');
+    if (!isAdmin && (!driver || ride.driverId !== driver.uid)) {
+      throw new AppError(ErrorCode.FORBIDDEN, 'Apenas o motorista atribuído pode avaliar o passageiro desta corrida.', 403);
+    }
+    if (!isAdmin && ride.status !== 'COMPLETED') {
+      throw new AppError(ErrorCode.INVALID_RIDE_STATE, 'A avaliação só pode ser feita após a conclusão da corrida.', 400);
     }
 
     const { rating, feedback } = req.body;
