@@ -685,7 +685,7 @@ export async function claimRideForDriver(
       const ride = rideSnap.data() as Ride;
       if (!['REQUESTED', 'OFFERED'].includes(ride.status) || ride.driverId) return null;
 
-      let offerRef: FirebaseFirestore.DocumentReference | null = null;
+      let offerRef: any = null;
       let offerData: RideOffer | null = null;
       if (ride.currentOfferId) {
         offerRef = db.collection('ride_offers').doc(ride.currentOfferId);
