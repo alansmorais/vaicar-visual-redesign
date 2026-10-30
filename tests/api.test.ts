@@ -3656,6 +3656,13 @@ describe('VaiCar Platform - API Automated Tests', () => {
   });
 
 
+  describe('Live stream access control', () => {
+    it('rejects anonymous SSE connections', async () => {
+      const res = await request(app).get('/api/v1/live/stream');
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('Authenticated driver discovery', () => {
     it('rejects public driver search because results include live driver location and vehicle details', async () => {
       const res = await request(app)
