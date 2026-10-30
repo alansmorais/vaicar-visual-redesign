@@ -3688,6 +3688,10 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
     let secRideId: string;
     const secReceiptId = `receipt-sec-${Date.now()}`;
+    const secClaimRideId = `ride-claim-sec-${Date.now()}`;
+    const secSecondDriverUid = `sec-driver-two-${Date.now()}`;
+    const secSecondDriverEmail = `sec.driver.two.${Date.now()}@teste.vaicar.app`;
+    const secSecondDriverToken = `${secSecondDriverUid}:${secSecondDriverEmail}`;
 
     beforeAll(async () => {
       // 1. Create Driver
@@ -3699,6 +3703,15 @@ describe('VaiCar Platform - API Automated Tests', () => {
         status: 'APPROVED',
         isOnline: true,
         currentLocation: { lat: -23.8055, lng: -45.4011, updatedAt: new Date().toISOString() },
+        servicesOffered: ['ride'],
+      } as any);
+
+      await saveDriverProfile({
+        uid: secSecondDriverUid,
+        name: 'Segundo Motorista Segurança',
+        email: secSecondDriverEmail,
+        status: 'APPROVED',
+        isOnline: true,
         servicesOffered: ['ride'],
       } as any);
 
@@ -3720,6 +3733,22 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       // 4. Create Ride
       secRideId = `ride-sec-${Date.now()}`;
+      await saveRide({
+        id: secClaimRideId,
+        serviceType: 'ride',
+        passengerId: secPassengerUid,
+        passengerName: 'Passageiro Autorizado Segurança',
+        origin: { address: 'Centro, São Sebastião', lat: -23.8055, lng: -45.4011 },
+        destination: { address: 'Boiçucanga, São Sebastião', lat: -23.7842, lng: -45.6175 },
+        distanceKm: 12,
+        durationMinutes: 25,
+        fareAmount: 28.25,
+        paymentMethod: 'PIX',
+        paymentStatus: 'PENDING',
+        status: 'REQUESTED',
+        requestedAt: new Date().toISOString(),
+      } as any);
+
       await saveRide({
         id: secRideId,
         serviceType: 'ride',
@@ -3758,6 +3787,23 @@ describe('VaiCar Platform - API Automated Tests', () => {
         paymentStatus: 'PENDING',
         generatedAt: new Date().toISOString(),
       } as Receipt);
+    });
+
+    it('POST /api/v1/rides/:id/accept allows only one concurrent driver claim', async () => {
+      const [first, second] = await Promise.all([
+        request(app)
+          .post(`/api/v1/rides/${secClaimRideId}/accept`)
+          .set('Authorization', `Bearer ${secDriverToken}`),
+        request(app)
+          .post(`/api/v1/rides/${secClaimRideId}/accept`)
+          .set('Authorization', `Bearer ${secSecondDriverToken}`),
+      ]);
+      const statuses = [first.status, second.status].sort();
+      expect(statuses).toEqual([200, 409]);
+      const claimed = await getRide(secClaimRideId);
+      expect(claimed?.driverId).toBeDefined();
+      expect([secDriverUid, secSecondDriverUid]).toContain(claimed?.driverId);
+      expect(claimed?.status).toBe('DRIVER_ARRIVING');
     });
 
     it('GET /api/v1/receipts/:id rejects anonymous requests', async () => {
