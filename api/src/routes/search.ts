@@ -1,10 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import { listOnlineDrivers, getPlatformPricing, getActiveRideForUser, isDriverGpsFresh } from '../services/firestore.js';
 import { calculateHaversineDistanceKm, MAX_DISPATCH_RADIUS_KM } from '../services/dispatch.js';
 import { calculateFareForDriver } from './rides.js';
 import { config } from '../config/index.js';
 
 export const searchRouter = Router();
+
+// Driver discovery exposes live GPS coordinates and vehicle details; require a verified account.
+searchRouter.use(authenticate);
 
 /**
  * POST /api/v1/search/drivers and /search/drivers
