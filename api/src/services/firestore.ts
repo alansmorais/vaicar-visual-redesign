@@ -683,7 +683,7 @@ export async function claimRideForDriver(
       const rideSnap = await transaction.get(rideRef);
       if (!rideSnap.exists) return null;
       const ride = rideSnap.data() as Ride;
-      if (!['REQUESTED', 'OFFERED'].includes(ride.status) || ride.driverId) return null;
+      if (!['REQUESTED', 'OFFERED'].includes(ride.status) || (ride.driverId && ride.driverId !== driverId)) return null;
 
       let acceptedOfferId: string | null = null;
       let offerData: RideOffer | null = null;
@@ -713,7 +713,7 @@ export async function claimRideForDriver(
   await previous;
   try {
     const ride = localStore.rides.get(rideId) as Ride | undefined;
-    if (!ride || !['REQUESTED', 'OFFERED'].includes(ride.status) || ride.driverId) return null;
+    if (!ride || !['REQUESTED', 'OFFERED'].includes(ride.status) || (ride.driverId && ride.driverId !== driverId)) return null;
     if (ride.currentOfferId) {
       const offer = localStore.rideOffers.get(ride.currentOfferId) as RideOffer | undefined;
       if (!offer || offer.driverId !== driverId || offer.status !== 'PENDING' ||
