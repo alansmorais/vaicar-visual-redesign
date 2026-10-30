@@ -22,8 +22,9 @@ import {
   getActivePendingOfferForDriver,
   savePassengerProfile,
   savePendingPin,
+  saveReceipt,
 } from '../api/src/services/firestore.js';
-import { DriverProfile, Ride } from '../shared/src/types.js';
+import { DriverProfile, Ride, Receipt } from '../shared/src/types.js';
 
 describe('VaiCar Platform - API Automated Tests', () => {
   // Test authentication tokens for dev/test mode
@@ -3686,6 +3687,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
     const attackerToken = `${attackerUid}:${attackerEmail}`;
 
     let secRideId: string;
+    const secReceiptId = `receipt-sec-${Date.now()}`;
 
     beforeAll(async () => {
       // 1. Create Driver
@@ -3735,6 +3737,56 @@ describe('VaiCar Platform - API Automated Tests', () => {
         status: 'IN_PROGRESS',
         requestedAt: new Date().toISOString(),
       } as any);
+
+      await saveReceipt({
+        id: secReceiptId,
+        rideId: secRideId,
+        receiptNumber: 'SEC-TEST-001',
+        passengerName: '<script>alert(1)</script>',
+        passengerEmail: secPassengerEmail,
+        passengerPhone: '+5512999990000',
+        driverName: 'Motorista Autorizado Segurança',
+        vehicleDescription: 'Fiat Argo',
+        vehiclePlate: 'ABC1D23',
+        dateTime: new Date().toISOString(),
+        originAddress: 'Centro',
+        destinationAddress: 'Boiçucanga',
+        distanceKm: 12,
+        durationMinutes: 25,
+        fareAmount: 28.25,
+        paymentMethod: 'PIX',
+        paymentStatus: 'PENDING',
+        generatedAt: new Date().toISOString(),
+      } as Receipt);
+    });
+
+    it('GET /api/v1/receipts/:id rejects anonymous requests', async () => {
+      const res = await request(app).get(`/api/v1/receipts/${secReceiptId}`);
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/v1/receipts/:id denies users unrelated to the ride', async () => {
+      const res = await request(app)
+        .get(`/api/v1/receipts/${secReceiptId}`)
+        .set('Authorization', `Bearer ${attackerToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('GET /api/v1/receipts/:id allows the assigned passenger', async () => {
+      const res = await request(app)
+        .get(`/api/v1/receipts/${secReceiptId}`)
+        .set('Authorization', `Bearer ${secPassengerToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.receiptNumber).toBe('SEC-TEST-001');
+    });
+
+    it('GET /api/v1/receipts/:id/html escapes untrusted receipt values', async () => {
+      const res = await request(app)
+        .get(`/api/v1/receipts/${secReceiptId}/html`)
+        .set('Authorization', `Bearer ${secPassengerToken}`);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(res.text).not.toContain('<script>alert(1)</script>');
     });
 
     it('GET /api/v1/rides/:id/driver-location rejects unassigned attacker with 403 Forbidden', async () => {
