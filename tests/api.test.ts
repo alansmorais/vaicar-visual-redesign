@@ -3777,6 +3777,30 @@ describe('VaiCar Platform - API Automated Tests', () => {
       expect(res.status).toBe(401);
       expect(res.body.error.message).toContain('incorretos');
     });
+    
+    it('POST /rides/:id/decline rejects a user who is not the assigned driver', async () => {
+      const res = await request(app)
+        .post(`/api/v1/rides/${secRideId}/decline`)
+        .set('Authorization', `Bearer ${attackerToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('POST /rides/:id/status rejects non-admin generic status changes', async () => {
+      const res = await request(app)
+        .post(`/api/v1/rides/${secRideId}/status`)
+        .set('Authorization', `Bearer ${attackerToken}`)
+        .send({ status: 'COMPLETED' });
+      expect(res.status).toBe(403);
+    });
+
+    it('POST /rides/:id/rate-passenger rejects a driver who is not assigned to the ride', async () => {
+      const res = await request(app)
+        .post(`/api/v1/rides/${secRideId}/rate-passenger`)
+        .set('Authorization', `Bearer ${attackerToken}`)
+        .send({ rating: 5 });
+      expect(res.status).toBe(403);
+    });
+
   });
 });
 
