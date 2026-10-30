@@ -685,21 +685,23 @@ export async function claimRideForDriver(
       const ride = rideSnap.data() as Ride;
       if (!['REQUESTED', 'OFFERED'].includes(ride.status) || ride.driverId) return null;
 
-      let offerRef: any = null;
+      let acceptedOfferId: string | null = null;
       let offerData: RideOffer | null = null;
       if (ride.currentOfferId) {
-        offerRef = db.collection('ride_offers').doc(ride.currentOfferId);
-        const offerSnap = await transaction.get(offerRef);
+        const offerDocRef = db.collection('ride_offers').doc(ride.currentOfferId);
+        const offerSnap = await transaction.get(offerDocRef);
         if (!offerSnap.exists) return null;
         offerData = offerSnap.data() as RideOffer;
+        acceptedOfferId = ride.currentOfferId;
         if (offerData.driverId !== driverId || offerData.status !== 'PENDING' ||
             new Date(offerData.expiresAt).getTime() <= new Date(nowIso).getTime()) return null;
       }
 
       const updatedRide = { ...ride, ...updates, id: ride.id, driverId, status: 'DRIVER_ARRIVING' as const };
       transaction.set(rideRef, sanitizeFirestoreData(updatedRide));
-      if (offerRef && offerData) {
-        transaction.set(offerRef, sanitizeFirestoreData({ ...offerData, status: 'ACCEPTED', respondedAt: nowIso }));
+      if (acceptedOfferId && offerData) {
+        const acceptedOfferRef = db.collection('ride_offers').doc(acceptedOfferId);
+        transaction.set(acceptedOfferRef, sanitizeFirestoreData({ ...offerData, status: 'ACCEPTED', respondedAt: nowIso }));
       }
       return updatedRide;
     });
