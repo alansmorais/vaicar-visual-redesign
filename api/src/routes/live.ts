@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { addLiveClient, removeLiveClient, broadcastLiveEvent, getLiveClientCount } from '../services/liveStream.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, AuthenticatedUser } from '../middleware/auth.js';
 
 export const liveRouter = Router();
 
@@ -11,7 +11,7 @@ export const liveRouter = Router();
  */
 liveRouter.get('/stream', authenticate, (req: Request, res: Response) => {
   // authenticate verifies Firebase ID tokens or server JWTs; never accept anonymous streams.
-  const userId = req.user!.authUid;
+  const userId = (req.user as AuthenticatedUser).authUid;
 
   // Set SSE HTTP response headers
   res.writeHead(200, {
