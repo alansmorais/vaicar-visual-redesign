@@ -3535,6 +3535,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
       // 1. Search when drivers are offline: returns totalFound = 0, results = [], standardFare > 0
       const resEmpty = await request(app)
         .post('/api/v1/search/drivers')
+        .set('Authorization', `Bearer ${passengerToken}`)
         .send({
           pickupLat: -23.7928,
           pickupLng: -45.3999,
@@ -3578,6 +3579,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       const resBrunoOnly = await request(app)
         .post('/api/v1/search/drivers')
+        .set('Authorization', `Bearer ${passengerToken}`)
         .send({
           pickupLat: -23.7928,
           pickupLng: -45.3999,
@@ -3618,6 +3620,7 @@ describe('VaiCar Platform - API Automated Tests', () => {
 
       const resBoth = await request(app)
         .post('/api/v1/search/drivers')
+        .set('Authorization', `Bearer ${passengerToken}`)
         .send({
           pickupLat: -23.7928,
           pickupLng: -45.3999,
