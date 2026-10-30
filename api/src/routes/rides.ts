@@ -784,7 +784,7 @@ ridesRouter.post('/:id/accept', async (req: Request, res: Response, next: NextFu
     const ride = await getRide(String(req.params.id));
     if (!ride) throw new AppError(ErrorCode.NOT_FOUND, 'Corrida não encontrada.', 404);
 
-    if (!['REQUESTED', 'OFFERED'].includes(ride.status) || ride.driverId) {
+    if (!['REQUESTED', 'OFFERED'].includes(ride.status) || (ride.driverId && ride.driverId !== driver.uid)) {
       throw new AppError(ErrorCode.INVALID_RIDE_STATE, `Esta corrida não está mais disponível (status: ${ride.status}).`, 409);
     }
 
